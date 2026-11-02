@@ -31,6 +31,7 @@ First public preview.
 - Docker test bed and an end-to-end suite that attacks the boundary.
 
 ### Security
+- Build with Go 1.26.10 and current dependencies (govulncheck clean).
 - Fixed 13 findings from a pre-release adversarial review (see
   `docs/threat-model.md`).
 
