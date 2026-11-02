@@ -5,6 +5,13 @@
 1. Run it in a private subnet with no inbound internet. Linux with cgroup v2.
 2. Install: `ssh-mcp` binary, AWS CLI + `session-manager-plugin` (SSM
    transport), `bwrap`, `sshfs` / `fusermount3`, `prlimit`.
+   On **Ubuntu 24.04+** two AppArmor defaults block the sandbox: the
+   restriction on unprivileged user namespaces (bubblewrap) and the
+   `fusermount3` profile (sshfs mirror mounts under `data_dir`). Either add an
+   AppArmor profile for the ssh-mcp service that allows `userns` and the mount,
+   or set `kernel.apparmor_restrict_unprivileged_userns=0` and adjust the
+   `fusermount3` profile. The live tools are unaffected; only `sandbox_exec`
+   needs this.
 3. Keys:
    ```sh
    ssh-mcp ca init -key /etc/ssh-mcp/ca_key
