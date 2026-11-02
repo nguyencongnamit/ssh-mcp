@@ -1,0 +1,13 @@
+listen: 0.0.0.0:8443
+data_dir: /var/lib/ssh-mcp/data
+audit_key: audit.key
+ca_key: ca_key
+known_hosts: known_hosts
+policy: policy.yaml
+inventory:
+  static: hosts.yaml
+transport:
+  direct: true
+  ssm: false
+sandbox:
+  enabled: true

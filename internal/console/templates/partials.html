@@ -1,0 +1,30 @@
+{{define "who"}}<span class="who"><span class="avatar k-{{kind .Identity}}">{{initial .Display .Identity}}</span><span class="whotext"><b>{{if .Display}}{{.Display}}{{else}}{{.Identity}}{{end}}</b>{{if .Display}}<small>{{.Identity}}</small>{{end}}</span></span>{{end}}
+
+{{define "decision"}}<span class="badge d-{{.}}">{{if eq . "allow"}}<i>→</i>allowed{{else if eq . "result"}}<i>✓</i>done{{else if eq . "deny"}}<i>✕</i>refused{{else if eq . "error"}}<i>!</i>error{{else if eq . "admin"}}<i>◆</i>admin{{else if eq . "issue"}}<i>◇</i>cert{{else}}{{.}}{{end}}</span>{{end}}
+
+{{define "rows"}}
+{{if .}}
+<div class="tablewrap"><table class="log">
+<thead><tr><th class="w-time">Time</th><th>Identity</th><th>Tool</th><th>Host</th><th>Outcome</th><th>Detail</th><th class="r">Out</th><th class="r">Time</th></tr></thead>
+<tbody>
+{{range .}}<tr class="click" data-href="/activity/{{.ID}}">
+  <td class="nowrap"><span class="t" title="{{stamp .TS}}">{{clock .TS}}</span><small class="muted">#{{.ID}}</small></td>
+  <td>{{template "who" .}}</td>
+  <td><code class="tool">{{.Tool}}</code></td>
+  <td class="nowrap">{{if .Host}}<span class="hostname">{{.Host}}</span>{{else}}<span class="muted">—</span>{{end}}</td>
+  <td class="nowrap">{{template "decision" .Decision}}{{if gt .Redactions 0}}<span class="badge redact" title="Secrets removed from the output">{{.Redactions}} redacted</span>{{end}}</td>
+  <td class="detail">{{if .Reason}}<span class="reason">{{short .Reason 90}}</span>{{else}}{{with argsum .Args}}<span class="args">{{short . 90}}</span>{{end}}{{end}}</td>
+  <td class="r num muted nowrap">{{if .BytesOut}}{{bytes .BytesOut}}{{end}}</td>
+  <td class="r num muted nowrap">{{if .DurationMS}}{{dur .DurationMS}}{{end}}</td>
+</tr>{{end}}
+</tbody></table></div>
+{{else}}
+<div class="emptystate"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg><b>No activity yet</b><span>Calls appear here the moment an agent uses a tool.</span></div>
+{{end}}
+{{end}}
+
+{{define "bars"}}{{$max := .Max}}{{$by := .By}}
+{{if .Items}}<ul class="bars">{{range .Items}}
+  <li><a href="/activity?{{q $by .Label}}"><span class="bl">{{if .Display}}{{.Display}}{{else}}{{.Label}}{{end}}</span><span class="bn">{{.N}}</span><svg class="bt" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><rect class="btrack" width="100" height="6" rx="3"/><rect class="bf" width="{{pct .N $max}}" height="6" rx="3"/></svg></a></li>
+{{end}}</ul>{{else}}<p class="empty">No calls in the last 24 hours.</p>{{end}}
+{{end}}

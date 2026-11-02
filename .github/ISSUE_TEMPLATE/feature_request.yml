@@ -1,0 +1,17 @@
+name: Feature request
+description: Propose a tool, transport or improvement
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: ssh-mcp is read-only by design. Requests for write access or raw command execution on targets will be declined.
+  - type: textarea
+    id: problem
+    attributes: { label: Problem, description: What are you trying to diagnose or achieve? }
+    validations: { required: true }
+  - type: textarea
+    id: proposal
+    attributes: { label: Proposal, description: "For a new live tool: the exact command and arguments, and why its output is safe." }
+  - type: textarea
+    id: security
+    attributes: { label: Security considerations }

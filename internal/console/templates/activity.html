@@ -1,0 +1,24 @@
+{{define "content"}}{{with .Data}}
+<div class="pagehead">
+  <div><div class="kicker">// activity · {{tz}}</div><h1>Audit log</h1></div>
+</div>
+<form class="toolbar" method="get" action="/activity">
+  <div class="seg">
+    <a class="{{if eq .F.Decision ""}}on{{end}}" href="/activity">All</a>
+    <a class="{{if eq .F.Decision "allow"}}on{{end}}" href="/activity?decision=allow">Allowed</a>
+    <a class="{{if eq .F.Decision "deny"}}on{{end}}" href="/activity?decision=deny">Refused</a>
+    <a class="{{if eq .F.Decision "error"}}on{{end}}" href="/activity?decision=error">Errors</a>
+    <a class="{{if eq .F.Decision "admin"}}on{{end}}" href="/activity?decision=admin">Admin</a>
+  </div>
+  <input type="hidden" name="decision" value="{{.F.Decision}}">
+  <label class="field"><span>Identity</span><input name="identity" value="{{.F.Identity}}" placeholder="bot:… user:…"></label>
+  <label class="field"><span>Host</span><input name="host" value="{{.F.Host}}" placeholder="i-… web-1"></label>
+  <label class="field"><span>Tool</span><input name="tool" value="{{.F.Tool}}" placeholder="read_file"></label>
+  <button class="btn primary">Apply</button>
+  {{if or .F.Identity .F.Host .F.Tool .F.Decision}}<a class="btn ghost" href="/activity">Clear filters</a>{{end}}
+</form>
+<section class="card flush">
+{{template "rows" .Records}}
+{{if .Next}}<div class="pager"><a class="btn tertiary" href="{{.Next}}">Load older records →</a></div>{{end}}
+</section>
+{{end}}{{end}}

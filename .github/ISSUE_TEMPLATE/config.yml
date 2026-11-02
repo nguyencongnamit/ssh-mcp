@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and ideas
+    url: https://github.com/nguyencongnamit/ssh-mcp/discussions
+    about: Ask and discuss in GitHub Discussions
+  - name: Report a vulnerability
+    url: https://github.com/nguyencongnamit/ssh-mcp/security/advisories/new
+    about: Private disclosure — never in a public issue

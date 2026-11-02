@@ -1,0 +1,90 @@
+{{define "content"}}{{$csrf := .CSRF}}{{$killed := .Killed}}{{with .Data}}
+<div class="pagehead">
+  <div><div class="kicker">// overview · last 24 hours · {{tz}}</div><h1>Agent activity</h1></div>
+  <div class="headactions"><a class="btn tertiary" href="/activity?decision=deny">Review refusals</a><a class="btn primary" href="/activity">Open audit log</a></div>
+</div>
+
+<section class="kpis">
+  <a class="kpi" href="/activity?decision=allow">
+    <div class="kpitop"><span class="label">Calls allowed</span></div>
+    <div class="kpinum">{{.Day.Calls}}</div>
+    <div class="delta {{.DCalls.Tone}}">{{.DCalls.Glyph}} {{.DCalls.Text}}</div>
+    <div class="kpispark">{{spark .SCalls "s-allow"}}</div>
+  </a>
+  <a class="kpi" href="/activity?decision=deny">
+    <div class="kpitop"><span class="label">Refused</span></div>
+    <div class="kpinum {{if .Day.Denied}}t-deny{{end}}">{{.Day.Denied}}</div>
+    <div class="delta {{.DDenied.Tone}}">{{.DDenied.Glyph}} {{.DDenied.Text}}</div>
+    <div class="kpispark">{{spark .SDenied "s-deny"}}</div>
+  </a>
+  <a class="kpi" href="/activity?decision=error">
+    <div class="kpitop"><span class="label">Errors</span></div>
+    <div class="kpinum">{{.Day.Errors}}</div>
+    <div class="delta {{.DErrors.Tone}}">{{.DErrors.Glyph}} {{.DErrors.Text}}</div>
+    <div class="kpispark">{{spark .SErrors "s-error"}}</div>
+  </a>
+  <div class="kpi">
+    <div class="kpitop"><span class="label">Secrets redacted</span></div>
+    <div class="kpinum">{{.Day.Redactions}}</div>
+    <div class="delta {{.DRedact.Tone}}">{{.DRedact.Glyph}} {{.DRedact.Text}}</div>
+    <div class="kpispark">{{spark .SRedact "s-allow"}}</div>
+  </div>
+  <a class="kpi" href="/identities">
+    <div class="kpitop"><span class="label">Active identities</span></div>
+    <div class="kpinum">{{.Day.Identities}}</div>
+    <div class="delta flat">{{.Prev.Identities}} the day before</div>
+  </a>
+  <a class="kpi" href="/hosts">
+    <div class="kpitop"><span class="label">Hosts touched</span></div>
+    <div class="kpinum">{{.Day.Hosts}}<span class="of">/ {{.HostCount}}</span></div>
+    <div class="delta flat">of hosts in inventory</div>
+  </a>
+</section>
+
+<div class="grid-main">
+  <section class="card chartcard">
+    <div class="cardhead">
+      <div><h2>Calls per hour</h2><p class="sub">Every tool call an agent made, by outcome</p></div>
+      <ul class="legend"><li><span class="sw s-allow"></span>Allowed</li><li><span class="sw s-deny"></span>Refused</li><li><span class="sw s-error"></span>Error</li></ul>
+    </div>
+    {{.Chart}}
+  </section>
+
+  <section class="card killcard {{if $killed}}is-stopped{{end}}">
+    <div class="cardhead"><div><h2>Kill switch</h2><p class="sub">Takes effect on the very next call</p></div></div>
+    <div class="killstate">
+      <span class="ring"><span></span></span>
+      <div>{{if $killed}}<b>Stopped</b><span>{{$killed.Reason}}</span>{{else}}<b>Agents running</b><span>{{len .Disabled}} identit{{if eq (len .Disabled) 1}}y{{else}}ies{{end}} individually stopped</span>{{end}}</div>
+    </div>
+    {{if .Disabled}}<ul class="stoplist">{{range .Disabled}}{{if ne .Key "*"}}
+      <li><code>{{.Key}}</code><span class="muted">{{short .Reason 40}}</span>
+        <form method="post" action="/unkill" data-confirm="Re-enable {{.Key}}?"><input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="key" value="{{.Key}}"><input type="hidden" name="back" value="/"><button class="btn ghost xs">Re-enable</button></form></li>
+    {{end}}{{end}}</ul>{{end}}
+    {{if not $killed}}
+    <form method="post" action="/kill" class="stopall" data-confirm="Stop ALL agents now? Every next call is refused until you resume.">
+      <input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="all" value="1"><input type="hidden" name="back" value="/">
+      <input name="reason" placeholder="Reason, e.g. incident 42" required maxlength="200">
+      <button class="btn danger block"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>Stop all agents</button>
+    </form>
+    {{end}}
+  </section>
+</div>
+
+<div class="grid-3">
+  <section class="card"><div class="cardhead"><h2>Top tools</h2><span class="sub">24h</span></div>{{template "bars" (dict "Items" .Tools "Max" .ToolsMax "By" "tool")}}</section>
+  <section class="card"><div class="cardhead"><h2>Top identities</h2><span class="sub">24h</span></div>{{template "bars" (dict "Items" .Ids "Max" .IdsMax "By" "identity")}}</section>
+  <section class="card">
+    <div class="cardhead"><div><h2>Recent refusals</h2><p class="sub">Turned down by policy or by the host</p></div><a class="link" href="/activity?decision=deny">All →</a></div>
+    {{if .Denied}}<ul class="refusals">{{range .Denied}}
+      <li class="click" data-href="/activity/{{.ID}}"><div class="rtop">{{template "who" .}}<span class="muted nowrap">{{since .TS}}</span></div>
+      <div class="rbody"><code class="tool">{{.Tool}}</code>{{if .Host}}<span class="hostname">{{.Host}}</span>{{end}}</div>
+      <div class="rreason">{{short .Reason 110}}</div></li>{{end}}</ul>
+    {{else}}<div class="emptystate small"><b>Nothing refused</b><span>Every call in the window matched a rule.</span></div>{{end}}
+  </section>
+</div>
+
+<section class="card flush">
+  <div class="cardhead pad"><div><h2>Live feed</h2><p class="sub">Newest first · updates in place every 10 seconds</p></div><a class="link" href="/activity">Full audit log →</a></div>
+  {{template "rows" .Feed}}
+</section>
+{{end}}{{end}}

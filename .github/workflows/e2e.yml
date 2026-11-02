@@ -1,0 +1,40 @@
+name: E2E
+
+# Builds the Docker test bed (a real Linux target bootstrapped with
+# deploy/bootstrap-target.sh, plus the server) and runs the attack suite.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with: { go-version-file: go.mod, cache: true }
+      - name: Bring up test bed
+        working-directory: testbed
+        run: ./up.sh
+      - name: Attack suite
+        run: go test -tags e2e -count=1 -v ./testbed/e2e/
+      - name: Logs on failure
+        if: failure()
+        working-directory: testbed
+        run: docker compose logs --no-color | tail -300
+      - name: Tear down
+        if: always()
+        working-directory: testbed
+        run: docker compose down -v

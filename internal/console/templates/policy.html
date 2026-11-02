@@ -1,0 +1,24 @@
+{{define "content"}}{{with .Data}}
+<div class="pagehead"><div><div class="kicker">// governance · read-only</div><h1>Policy</h1></div>
+<p class="sub right">Deny by default · edit policy.yaml, then restart</p></div>
+<div class="rules">
+{{range .Rules}}
+<section class="card rulecard">
+  <div class="rulename"><span class="label">rule</span><b>{{.Name}}</b>{{if .Rate}}<span class="chip">{{.Rate}}</span>{{else}}<span class="chip muted">120/min</span>{{end}}</div>
+  <div class="flow">
+    <div class="fbox"><span class="label">Who</span><b>{{if .Who.EntraGroup}}Entra group{{else if .Who.User}}User{{else}}Bot{{end}}</b><code>{{if .Who.EntraGroup}}{{.Who.EntraGroup}}{{else if .Who.User}}{{.Who.User}}{{else}}{{.Who.Token}}{{end}}</code></div>
+    <svg class="farrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    <div class="fbox"><span class="label">May use</span><div class="chips">{{range .Tools}}<span class="chip">{{if eq . "*"}}every tool{{else}}{{.}}{{end}}</span>{{end}}</div></div>
+    <svg class="farrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    <div class="fbox"><span class="label">On hosts</span>{{if .Hosts.All}}<b>all hosts</b>{{else}}{{range $k, $v := .Hosts.Tags}}<div><code>{{$k}}</code> = {{join $v " or "}}</div>{{end}}{{end}}</div>
+  </div>
+</section>
+{{end}}
+</div>
+<div class="grid-2">
+<section class="card"><div class="cardhead"><div><h2>Readable paths</h2><p class="sub">Signed into every certificate and enforced again on each host</p></div></div>
+  <div class="chips">{{range .Paths.Allow}}<span class="chip strong">{{.}}</span>{{end}}</div></section>
+<section class="card"><div class="cardhead"><div><h2>Always hidden</h2><p class="sub">Invisible to every tool and to the sandbox mirror</p></div></div>
+  <div class="chips">{{range .Paths.Deny}}<span class="chip deny">{{.}}</span>{{end}}</div></section>
+</div>
+{{end}}{{end}}

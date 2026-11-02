@@ -1,0 +1,27 @@
+# /etc/ssh-mcp/ssh-mcp.yaml (placeholders in angle brackets)
+listen: <private-ip>:8443
+public_url: https://<ssh-mcp.internal.example>
+tls:
+  cert_file: /etc/ssh-mcp/tls.crt
+  key_file: /etc/ssh-mcp/tls.key
+data_dir: /var/lib/ssh-mcp
+audit_key: /etc/ssh-mcp/audit.key    # ssh-mcp audit keygen; keep outside data_dir
+ca_key: /etc/ssh-mcp/ca_key          # 0600, owned by the ssh-mcp user
+source_address: <private-ip>/32      # direct-transport hosts only; SSM hosts always get loopback
+known_hosts: /etc/ssh-mcp/known_hosts # "<instance-id> ssh-ed25519 AAAA..." per host, or @cert-authority
+policy: /etc/ssh-mcp/policy.yaml
+oidc:
+  issuer: https://login.microsoftonline.com/<tenant-id>/v2.0
+  audience: api://<ssh-mcp-app-id>
+  required_scope: ssh-mcp.read
+  tenant_id: <tenant-id>
+inventory:
+  ec2:
+    - region: <region>
+transport:
+  ssm: true
+sandbox:
+  enabled: true
+  prefixes: [/var/log/, /etc/]       # must sit inside policy paths.allow (checked at startup)
+  max_concurrent: 4
+  cgroups: required                   # auto | required | off

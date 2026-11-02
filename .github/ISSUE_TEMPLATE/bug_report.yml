@@ -1,0 +1,26 @@
+name: Bug report
+description: Something does not work as documented
+labels: [bug, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Security issue?** Do not file it here — use a [private advisory](https://github.com/nguyencongnamit/ssh-mcp/security/advisories/new).
+  - type: input
+    id: version
+    attributes: { label: Version, description: "`ssh-mcp version`", placeholder: "0.1.0" }
+    validations: { required: true }
+  - type: dropdown
+    id: transport
+    attributes: { label: Transport, options: [SSM, direct, test bed] }
+    validations: { required: true }
+  - type: input
+    id: env
+    attributes: { label: Target distro / OpenSSH / bubblewrap versions, placeholder: "Ubuntu 24.04 / OpenSSH 9.6 / bwrap 0.9" }
+  - type: textarea
+    id: what
+    attributes: { label: What happened, description: Steps, expected and actual result. Redact hostnames, IPs and secrets. }
+    validations: { required: true }
+  - type: textarea
+    id: logs
+    attributes: { label: Logs, render: text }

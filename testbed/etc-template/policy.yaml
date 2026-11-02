@@ -1,0 +1,9 @@
+rules:
+  - name: ops
+    who: { token: ops-bot }
+    hosts: { tags: { env: [staging] } }
+    tools: ["*"]
+  - name: logs-only
+    who: { token: log-bot }
+    hosts: { tags: { env: [staging] } }
+    tools: [journal, tail_file]

@@ -1,0 +1,19 @@
+{{define "content"}}{{with .Data}}
+<div class="pagehead"><div><div class="kicker">// governance</div><h1>Audit integrity</h1></div></div>
+<section class="card verdict {{if or .Err .Broken}}bad{{else}}good{{end}}">
+  <div class="vicon">{{if or .Err .Broken}}<svg viewBox="0 0 24 24"><path d="M12 8v5M12 16h.01M10.3 3.9L2 18a2 2 0 001.7 3h16.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>{{else}}<svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>{{end}}</div>
+  <div>
+  {{if .Err}}<h2>Check failed</h2><p>{{.Err}}</p>
+  {{else if .Broken}}<h2>Chain broken at record #{{.Broken}}</h2><p>The log was changed outside ssh-mcp. Records from #{{.Broken}} onward cannot be trusted. <a href="/activity/{{.Broken}}">Inspect record #{{.Broken}} →</a></p>
+  {{else}}<h2>Audit chain intact</h2><p><b>{{.N}}</b> records verified, each sealed to the one before it. Checked at {{.At}}.</p>{{end}}
+  </div>
+  <a class="btn tertiary" href="/integrity">Verify again</a>
+</section>
+<section class="card">
+  <div class="cardhead"><div><h2>Latest links in the chain</h2><p class="sub">Each block stores the hash of the previous one; changing any record breaks every link after it</p></div></div>
+  <div class="chain">{{range $i, $c := .Chain}}{{if $i}}<svg class="clink" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>{{end}}
+    <a class="block" href="/activity/{{$c.ID}}"><span class="label">#{{$c.ID}} · {{clock $c.TS}}</span><b>{{$c.Tool}}</b><code>{{short $c.Hash 14}}</code></a>
+  {{end}}</div>
+</section>
+<p class="sub">Records are protected three ways: SQLite triggers refuse updates and deletes, every record carries the previous record's hash (HMAC-keyed when <code>audit_key</code> is set), and the server refuses to start if the chain is broken.</p>
+{{end}}{{end}}

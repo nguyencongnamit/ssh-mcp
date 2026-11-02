@@ -1,0 +1,21 @@
+# Deny by default. A call is allowed when one rule matches caller, host and tool.
+# entra_group takes a group object ID (the "groups" claim) or an app-role name ("roles").
+# user takes an Entra object ID (oid); emails/UPNs are mutable and rejected.
+# paths is signed into every certificate and enforced on the host as well.
+rules:
+  - name: oncall-everything
+    who: { entra_group: <platform-oncall-group-id> }
+    hosts: { tags: { env: [staging, prod] } }
+    tools: ["*"]
+  - name: developers-staging
+    who: { entra_group: <developers-group-id> }
+    hosts: { tags: { env: [staging] } }
+    tools: [list_hosts, host_overview, journal, read_file, tail_file, list_dir, sandbox_exec]
+  - name: triage-bot
+    who: { token: triage-bot }
+    hosts: { tags: { env: [prod] } }
+    tools: [journal, tail_file]
+    rate: 60/min
+paths:
+  allow: [/var/log/, /etc/]
+  deny: [/etc/app/private/]   # added to the built-in deny list, never replacing it

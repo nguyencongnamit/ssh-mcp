@@ -1,0 +1,26 @@
+{{define "content"}}
+<div class="pagehead"><div><div class="kicker">// fleet</div><h1>Hosts</h1></div>
+<p class="sub right">Tagged <code>ssh-mcp=enabled</code> · calls = allowed + refused</p></div>
+{{if .Data}}
+<div class="hostgrid">
+{{range .Data}}
+<a class="card hostcard" href="/activity?{{q "host" .ID}}">
+  <div class="hosttop">
+    <span class="hosticon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/><path d="M7 7h.01M7 17h.01"/></svg></span>
+    <div class="hostname-block"><b>{{.Name}}</b><small>{{.ID}}</small></div>
+    <span class="badge t-{{.Transport}}">{{.Transport}}</span>
+  </div>
+  <div class="tagrow">{{range kv .Tags}}<span class="chip">{{.}}</span>{{end}}</div>
+  <div class="hostspark"><span class="label">calls · 24h</span>{{spark .Spark "s-allow"}}</div>
+  <div class="hostfoot">
+    <div><span class="label">Last activity</span><b>{{if .Activity.LastSeen}}{{since .Activity.LastSeen}}{{else}}never{{end}}</b></div>
+    <div><span class="label">Calls</span><b>{{.Activity.Calls}}</b></div>
+  </div>
+  <div class="reach"><span class="label">Reachable by</span>{{range .Rules}}<div class="rule">{{.}}</div>{{else}}<div class="muted">No rule grants access</div>{{end}}</div>
+</a>
+{{end}}
+</div>
+{{else}}
+<div class="card"><div class="emptystate"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/></svg><b>No hosts yet</b><span>Run deploy/bootstrap-target.sh on an instance and tag it ssh-mcp=enabled.</span></div></div>
+{{end}}
+{{end}}

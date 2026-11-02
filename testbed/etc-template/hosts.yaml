@@ -1,0 +1,11 @@
+hosts:
+  - id: web-1
+    name: web-1
+    transport: direct
+    address: target:22
+    tags: { env: staging, team: platform }
+  - id: db-1
+    name: db-1
+    transport: direct
+    address: target:22
+    tags: { env: prod }

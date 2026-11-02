@@ -1,0 +1,10 @@
+/bin/
+/testbed/state/
+/testbed/server/etc/
+/testbed/server/ssh-mcp
+/testbed/target/ssh-mcp-helper
+/testbed/target/ssh-mcp-ca.pub
+*.db
+*.db-wal
+*.db-shm
+/testbed/target/bootstrap-target.sh

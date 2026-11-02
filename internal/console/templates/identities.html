@@ -1,0 +1,36 @@
+{{define "content"}}{{$csrf := .CSRF}}{{with .Data}}{{$off := .Off}}
+<div class="pagehead"><div><div class="kicker">// fleet</div><h1>Identities</h1></div>
+<p class="sub right">People sign in with Entra ID; bots use scoped tokens</p></div>
+<section class="card flush">
+  <div class="cardhead pad"><div><h2>Callers</h2><p class="sub">Everyone who has used ssh-mcp, most recent first</p></div></div>
+  {{if .Seen}}
+  <div class="tablewrap"><table>
+  <thead><tr><th>Identity</th><th>Type</th><th>Last seen</th><th class="r">Allowed</th><th class="r">Refused</th><th>Status</th><th class="r">Action</th></tr></thead><tbody>
+  {{range .Seen}}{{$d := index $off .Key}}<tr>
+    <td><a class="plain" href="/activity?{{q "identity" .Key}}">{{template "who" (dict "Identity" .Key "Display" .Display)}}</a></td>
+    <td><span class="badge k-{{kind .Key}}">{{kind .Key}}</span></td>
+    <td class="nowrap">{{since .LastSeen}}</td>
+    <td class="r num">{{.Calls}}</td><td class="r num {{if .Denied}}t-deny{{end}}">{{.Denied}}</td>
+    <td>{{if $d.Key}}<span class="status stopped"><span></span>Stopped</span><small class="muted block">{{$d.Reason}}</small>{{else}}<span class="status active"><span></span>Active</span>{{end}}</td>
+    <td class="r">{{if $d.Key}}
+      <form method="post" action="/unkill"><input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="key" value="{{.Key}}"><input type="hidden" name="back" value="/identities"><button class="btn tertiary sm">Re-enable</button></form>
+    {{else}}
+      <form method="post" action="/kill" class="inline" data-confirm="Stop {{.Key}}? Its next call is refused."><input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="identity" value="{{.Key}}"><input type="hidden" name="back" value="/identities"><input name="reason" placeholder="Reason" required maxlength="200"><button class="btn danger sm">Stop</button></form>
+    {{end}}</td></tr>{{end}}
+  </tbody></table></div>
+  {{else}}<div class="emptystate"><b>No callers yet</b><span>Identities appear after their first call.</span></div>{{end}}
+</section>
+<section class="card flush">
+  <div class="cardhead pad"><div><h2>Bot tokens</h2><p class="sub">Create with <code>ssh-mcp token create</code>; the secret is shown once and stored hashed</p></div></div>
+  {{if .Tokens}}
+  <div class="tablewrap"><table>
+  <thead><tr><th>Bot</th><th>Owner</th><th>Created</th><th>Expires</th><th>Status</th><th class="r">Action</th></tr></thead><tbody>
+  {{range .Tokens}}<tr>
+    <td>{{template "who" (dict "Identity" (printf "bot:%s" .Name) "Display" "")}}</td><td>{{.Owner}}</td>
+    <td class="nowrap muted">{{day .Created}}</td><td class="nowrap">{{day .Expires}} <span class="muted">· {{until .Expires}}</span></td>
+    <td>{{if .Revoked}}<span class="status stopped"><span></span>Revoked</span>{{else}}<span class="status active"><span></span>Valid</span>{{end}}</td>
+    <td class="r">{{if not .Revoked}}<form method="post" action="/token/revoke" data-confirm="Revoke bot:{{.Name}}? This cannot be undone."><input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="name" value="{{.Name}}"><button class="btn tertiary sm">Revoke</button></form>{{end}}</td></tr>{{end}}
+  </tbody></table></div>
+  {{else}}<div class="emptystate small"><b>No bot tokens</b></div>{{end}}
+</section>
+{{end}}{{end}}

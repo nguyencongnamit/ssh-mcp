@@ -1,0 +1,29 @@
+# Local test bed: one target, one ssh-mcp server, direct transport (no AWS).
+# Run ./up.sh, then: go test -tags e2e ./testbed/e2e/
+name: ssh-mcp-testbed
+services:
+  target:
+    build: ./target
+    networks: [bed]
+    # Exposed on localhost only so the e2e suite can attack sshd directly.
+    ports: ["127.0.0.1:18472:22"]
+  server:
+    build: ./server
+    depends_on: [target]
+    networks: [bed]
+    ports: ["127.0.0.1:18471:8443", "127.0.0.1:18473:8444"]
+    volumes: ["data:/var/lib/ssh-mcp/data"]
+    # FUSE for sshfs, and user namespaces for bubblewrap inside Docker.
+    devices: ["/dev/fuse"]
+    cgroup: private
+    cap_add: [SYS_ADMIN]
+    # systempaths=unconfined lets bubblewrap mount a fresh /proc for its own
+    # pid namespace; Docker masks /proc otherwise. Not needed on a plain host.
+    security_opt: ["apparmor=unconfined", "seccomp=unconfined", "systempaths=unconfined"]
+networks:
+  bed:
+    # Explicit subnet: the shared Docker host has exhausted its default pools.
+    ipam:
+      config: [{subnet: 10.247.71.0/28}]
+volumes:
+  data: {}

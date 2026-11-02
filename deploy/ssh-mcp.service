@@ -1,0 +1,29 @@
+[Unit]
+Description=ssh-mcp read-only SSH layer for AI agents
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=ssh-mcp
+Group=ssh-mcp
+ExecStart=/usr/local/bin/ssh-mcp serve -config /etc/ssh-mcp/ssh-mcp.yaml
+Restart=on-failure
+# fusermount3 is setuid-root; NoNewPrivileges=yes would stop sshfs mounting.
+NoNewPrivileges=no
+# bubblewrap needs unprivileged user namespaces; sshfs needs /dev/fuse.
+ProtectSystem=strict
+ReadWritePaths=/var/lib/ssh-mcp
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=yes
+# Delegate lets ssh-mcp give every sandbox its own cgroup with pids.max and
+# memory.max, so a fork bomb or a full /tmp hits that sandbox, not the server.
+Delegate=pids memory
+TasksMax=2048
+MemoryMax=4G
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,95 @@
+name: Release
+
+# Reproducible binaries + SHA256SUMS + CycloneDX SBOM + SLSA build provenance.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.bin }} ${{ matrix.goos }}/${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { bin: ssh-mcp, goos: linux, goarch: amd64 }
+          - { bin: ssh-mcp, goos: linux, goarch: arm64 }
+          - { bin: ssh-mcp, goos: darwin, goarch: amd64 }
+          - { bin: ssh-mcp, goos: darwin, goarch: arm64 }
+          - { bin: ssh-mcp-helper, goos: linux, goarch: amd64 }
+          - { bin: ssh-mcp-helper, goos: linux, goarch: arm64 }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with: { go-version-file: go.mod, cache: false }
+      - name: Build (reproducible)
+        env: { GOOS: '${{ matrix.goos }}', GOARCH: '${{ matrix.goarch }}', CGO_ENABLED: '0', BIN: '${{ matrix.bin }}' }
+        run: |
+          mkdir -p dist
+          go build -trimpath -buildvcs=false -ldflags "-s -w -X main.version=${GITHUB_REF_NAME#v}" \
+            -o "dist/${BIN}-${GOOS}-${GOARCH}" "./cmd/${BIN}"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with: { name: 'bin-${{ matrix.bin }}-${{ matrix.goos }}-${{ matrix.goarch }}', path: 'dist/*', if-no-files-found: error }
+
+  verify-reproducible:
+    name: Verify reproducible build
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with: { go-version-file: go.mod, cache: false }
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with: { pattern: 'bin-*', path: published, merge-multiple: true }
+      - name: Rebuild and compare SHA-256
+        run: |
+          set -euo pipefail; rc=0; mkdir -p rebuilt
+          for f in published/*; do
+            n=$(basename "$f"); IFS=- read -r a b c d <<<"$n"
+            if [ "$b" = helper ]; then bin=ssh-mcp-helper; os=$c; arch=$d; else bin=ssh-mcp; os=$b; arch=$c; fi
+            CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build -trimpath -buildvcs=false \
+              -ldflags "-s -w -X main.version=${GITHUB_REF_NAME#v}" -o "rebuilt/$n" "./cmd/$bin"
+            w=$(sha256sum "$f" | cut -d' ' -f1); h=$(sha256sum "rebuilt/$n" | cut -d' ' -f1)
+            if [ "$w" = "$h" ]; then echo "OK   $n $w"; else echo "DIFF $n"; rc=1; fi
+          done
+          exit $rc
+
+  release:
+    name: GitHub Release
+    needs: [build, verify-reproducible]
+    runs-on: ubuntu-latest
+    permissions: { contents: write, id-token: write, attestations: write }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with: { go-version-file: go.mod, cache: false }
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with: { pattern: 'bin-*', path: release, merge-multiple: true }
+      - name: Deploy bundle
+        run: tar -czf release/ssh-mcp-deploy.tar.gz deploy LICENSE README.md
+      - name: CycloneDX SBOM
+        run: |
+          go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.9.0
+          "$(go env GOPATH)/bin/cyclonedx-gomod" mod -json -licenses -output release/ssh-mcp.cyclonedx.json .
+      - name: Checksums
+        working-directory: release
+        run: find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\0' | sort -z | xargs -0 sha256sum > SHA256SUMS && cat SHA256SUMS
+      - name: Release notes from CHANGELOG
+        run: |
+          v=${GITHUB_REF_NAME#v}
+          awk -v v="$v" '$0 ~ "^## \\["v"\\]" {f=1; next} /^## \[/ && f {exit} f' CHANGELOG.md > notes.md
+          printf '\n---\n**Verify:** `sha256sum -c SHA256SUMS` and `gh attestation verify <file> --repo %s`.\n\nLicensed under BSL 1.1 (non-production and non-commercial use free; converts to Apache-2.0 three years after release). See LICENSE.\n' "$GITHUB_REPOSITORY" >> notes.md
+          cat notes.md
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with: { subject-path: 'release/*' }
+      - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        with:
+          files: release/*
+          body_path: notes.md

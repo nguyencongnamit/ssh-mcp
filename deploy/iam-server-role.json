@@ -1,0 +1,33 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "SshTunnelToTaggedHostsOnly",
+      "Effect": "Allow",
+      "Action": "ssm:StartSession",
+      "Resource": "arn:aws:ec2:<region>:<account-id>:instance/*",
+      "Condition": {
+        "StringEquals": { "ssm:resourceTag/ssh-mcp": "enabled" },
+        "BoolIfExists": { "ssm:SessionDocumentAccessCheck": "true" }
+      }
+    },
+    {
+      "Sid": "OnlyTheSshDocument",
+      "Effect": "Allow",
+      "Action": "ssm:StartSession",
+      "Resource": "arn:aws:ssm:<region>::document/AWS-StartSSHSession"
+    },
+    {
+      "Sid": "OwnSessionsOnly",
+      "Effect": "Allow",
+      "Action": ["ssm:TerminateSession", "ssm:ResumeSession"],
+      "Resource": "arn:aws:ssm:*:*:session/${aws:userid}-*"
+    },
+    {
+      "Sid": "Discover",
+      "Effect": "Allow",
+      "Action": "ec2:DescribeInstances",
+      "Resource": "*"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{{define "content"}}{{with .Data}}{{$r := .R}}
+<div class="pagehead">
+  <div><div class="kicker">// <a href="/activity">activity</a> · record #{{$r.ID}}</div>
+  <h1><code class="tool big">{{$r.Tool}}</code> {{template "decision" $r.Decision}}</h1>
+  <p class="sub">{{stamp $r.TS}} · {{since $r.TS}}</p></div>
+</div>
+<div class="grid-main">
+<section class="card">
+  <div class="cardhead"><h2>Call</h2></div>
+  <dl class="kv">
+    <dt>Identity</dt><dd>{{template "who" $r}} <a class="link sm" href="/activity?{{q "identity" $r.Identity}}">all calls →</a></dd>
+    <dt>Client</dt><dd>{{if $r.Client}}{{$r.Client}}{{else}}<span class="muted">—</span>{{end}}</dd>
+    <dt>Host</dt><dd>{{if $r.Host}}<span class="hostname">{{$r.Host}}</span> <a class="link sm" href="/activity?{{q "host" $r.Host}}">host activity →</a>{{else}}<span class="muted">—</span>{{end}}</dd>
+    <dt>Policy rule</dt><dd>{{if $r.Rule}}<code>{{$r.Rule}}</code>{{else}}<span class="muted">none matched</span>{{end}}</dd>
+    <dt>Arguments</dt><dd>{{with argsum $r.Args}}<div class="argline">{{.}}</div>{{end}}<pre>{{pretty $r.Args}}</pre></dd>
+    {{if $r.Reason}}<dt>{{if eq $r.Decision "deny"}}Refused because{{else}}Detail{{end}}</dt><dd><div class="callout {{if eq $r.Decision "deny"}}danger{{else if eq $r.Decision "error"}}warn{{end}}">{{$r.Reason}}</div></dd>{{end}}
+    <dt>Output</dt><dd><span class="stat-inline"><b>{{bytes $r.BytesOut}}</b> returned</span><span class="stat-inline"><b>{{$r.Redactions}}</b> secrets redacted</span><span class="stat-inline"><b>{{dur $r.DurationMS}}</b></span>{{if $r.ExitStatus}}<span class="stat-inline">exit <b>{{$r.ExitStatus}}</b></span>{{end}}</dd>
+  </dl>
+  <p class="note">Tool output is never stored by ssh-mcp, only its size and how many secrets were removed.</p>
+</section>
+<section class="card">
+  <div class="cardhead"><div><h2>Call trail</h2><p class="sub">Every record of this one call, linked by call ID</p></div></div>
+  <ol class="trail">{{range .Trail}}
+    <li class="{{if eq .ID $r.ID}}cur{{end}} t-{{.Decision}}"><span class="node"></span>
+      <div><div class="trow">{{template "decision" .Decision}}<span class="muted">{{clock .TS}}</span>{{if ne .ID $r.ID}}<a class="link sm" href="/activity/{{.ID}}">#{{.ID}}</a>{{end}}</div>
+      <div class="tdesc">{{if eq .Decision "allow"}}Policy rule <code>{{.Rule}}</code> matched; request sent to the host{{else if eq .Decision "result"}}{{bytes .BytesOut}} back from the host · {{.Redactions}} redacted · {{dur .DurationMS}}{{else}}{{short .Reason 120}}{{end}}</div></div></li>
+  {{end}}</ol>
+  <div class="cardhead mt"><h2>Hash chain</h2></div>
+  <div class="hashpair"><div><span class="label">previous</span><code>{{short $r.PrevHash 26}}</code></div><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg><div><span class="label">this record</span><code>{{short $r.Hash 26}}</code></div></div>
+</section>
+</div>
+<section class="card flush">
+  <div class="cardhead pad"><h2>Recent calls by this identity</h2></div>
+  {{template "rows" .History}}
+</section>
+{{end}}{{end}}

@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="400" viewBox="0 0 1280 400" role="img" aria-label="ssh-mcp — read-only SSH for AI agents">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#020617"/>
+      <stop offset="0.55" stop-color="#0b1730"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.78" cy="0.42" r="0.5">
+      <stop offset="0" stop-color="#1f66f1" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#1f66f1" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#1e293b" stroke-width="1"/>
+    </pattern>
+    <linearGradient id="fade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#000" stop-opacity="1"/>
+      <stop offset="0.5" stop-color="#fff" stop-opacity="1"/>
+    </linearGradient>
+    <mask id="gridmask"><rect width="1280" height="400" fill="url(#fade)"/></mask>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#1f66f1"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1280" height="400" fill="url(#bg)"/>
+  <rect width="1280" height="400" fill="url(#grid)" mask="url(#gridmask)" opacity="0.7"/>
+  <rect width="1280" height="400" fill="url(#glow)"/>
+
+  <!-- logo tile -->
+  <g transform="translate(88 92)">
+    <rect width="76" height="76" rx="18" fill="url(#tile)"/>
+    <path d="M20 26 L34 38 L20 50" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M40 52 H56" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+  </g>
+
+  <g font-family="'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
+    <text x="186" y="146" font-size="64" font-weight="700" fill="#f8fafc" letter-spacing="-1">ssh-mcp</text>
+    <text x="90" y="226" font-size="30" font-weight="600" fill="#e2e8f0">Read-only SSH for AI agents.</text>
+    <text x="90" y="264" font-size="19" fill="#94a3b8">Enforced by the OS — not by command filters or an LLM.</text>
+
+    <!-- feature chips -->
+    <g font-size="14" font-weight="600">
+      <g transform="translate(90 300)">
+        <rect width="207" height="36" rx="18" fill="#0f2a5c" stroke="#1f66f1" stroke-opacity="0.6"/>
+        <text x="103.5" y="23" text-anchor="middle" fill="#bfdbfe">OS-enforced read-only</text>
+      </g>
+      <g transform="translate(309 300)">
+        <rect width="182" height="36" rx="18" fill="#0f2a5c" stroke="#1f66f1" stroke-opacity="0.6"/>
+        <text x="91" y="23" text-anchor="middle" fill="#bfdbfe">Per-call SSH certs</text>
+      </g>
+      <g transform="translate(503 300)">
+        <rect width="165" height="36" rx="18" fill="#0f2a5c" stroke="#1f66f1" stroke-opacity="0.6"/>
+        <text x="82.5" y="23" text-anchor="middle" fill="#bfdbfe">Sandboxed search</text>
+      </g>
+      <g transform="translate(680 300)">
+        <rect width="182" height="36" rx="18" fill="#0f2a5c" stroke="#1f66f1" stroke-opacity="0.6"/>
+        <text x="91" y="23" text-anchor="middle" fill="#bfdbfe">Hash-chained audit</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- terminal card -->
+  <g transform="translate(902 70)" font-family="'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13">
+    <rect width="304" height="232" rx="14" fill="#0b1220" stroke="#334155"/>
+    <circle cx="20" cy="20" r="5" fill="#475569"/>
+    <circle cx="38" cy="20" r="5" fill="#475569"/>
+    <circle cx="56" cy="20" r="5" fill="#475569"/>
+    <text x="152" y="24" text-anchor="middle" fill="#64748b" font-size="11">agent → ssh-mcp</text>
+    <line x1="0" y1="38" x2="304" y2="38" stroke="#1e293b"/>
+    <text x="18" y="66" fill="#94a3b8">journal web-1 nginx</text>
+    <text x="18" y="88" fill="#60a5fa">✓ allowed · 212 lines · 2 redacted</text>
+    <text x="18" y="120" fill="#94a3b8">read_file /etc/shadow</text>
+    <text x="18" y="142" fill="#f87171">✕ refused · path denied</text>
+    <text x="18" y="174" fill="#94a3b8">sandbox rm -rf /targets</text>
+    <text x="18" y="196" fill="#f87171">✕ read-only file system</text>
+    <rect x="18" y="210" width="9" height="14" fill="#1f66f1"/>
+  </g>
+</svg>
