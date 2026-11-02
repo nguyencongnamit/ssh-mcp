@@ -6,6 +6,8 @@ All notable changes are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-03
+
 First public preview.
 
 ### Added
@@ -35,4 +37,5 @@ First public preview.
 - Fixed 13 findings from a pre-release adversarial review (see
   `docs/threat-model.md`).
 
-[Unreleased]: https://github.com/nguyencongnamit/ssh-mcp/commits/main
+[Unreleased]: https://github.com/nguyencongnamit/ssh-mcp/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/nguyencongnamit/ssh-mcp/releases/tag/v0.1.0
