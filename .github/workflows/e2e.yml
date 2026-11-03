@@ -35,11 +35,12 @@ jobs:
         with: { persist-credentials: false }
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with: { go-version-file: go.mod, cache: true }
-      - name: Host prerequisites (Ubuntu 24.04)
-        # Ubuntu 24.04 restricts unprivileged user namespaces (bubblewrap) and
-        # ships an AppArmor profile for fusermount3 that confines its mount
-        # targets. Both apply to processes inside containers. Production
-        # servers on 24.04 need the same (see docs/deployment.md).
+      - name: Host prerequisites (Ubuntu AppArmor)
+        # The runner's AppArmor restricts unprivileged user namespaces and
+        # confines fusermount3's mount points, and both reach into the test
+        # bed's containers. CI relaxes them on this throwaway host; real
+        # servers load the narrow profiles in deploy/apparmor/ instead
+        # (tested in apparmor.yml; see docs/deployment.md).
         run: |
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
           if [ -e /etc/apparmor.d/fusermount3 ]; then sudo apparmor_parser -R /etc/apparmor.d/fusermount3 || true; fi
