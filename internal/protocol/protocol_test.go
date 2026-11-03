@@ -89,3 +89,33 @@ func TestValidUnit(t *testing.T) {
 		}
 	}
 }
+
+func TestDockerArgs(t *testing.T) {
+	v, err := Normalize(ToolDockerPS, []byte(`{"all":true}`))
+	if err != nil || !v.(*DockerPSArgs).All {
+		t.Fatalf("docker_ps: %v %v", v, err)
+	}
+	v, err = Normalize(ToolDockerLogs, []byte(`{"container":"web-1.api_2"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	a := v.(*DockerLogsArgs)
+	if a.Lines != DefaultLines || a.SinceSeconds != DefaultSinceSecs {
+		t.Fatalf("defaults not applied: %+v", a)
+	}
+	v, _ = Normalize(ToolDockerLogs, []byte(`{"container":"web","lines":99999,"since_seconds":99999999}`))
+	if a := v.(*DockerLogsArgs); a.Lines != MaxJournalLines || a.SinceSeconds != MaxJournalSince {
+		t.Fatalf("caps not applied: %+v", a)
+	}
+	for _, bad := range []string{
+		`{"container":"-it"}`, `{"container":".x"}`, `{"container":"a/b"}`, `{"container":"a b"}`,
+		`{"container":""}`, `{}`, `{"container":"web","follow":true}`, `{"container":"web;id"}`,
+	} {
+		if _, err := Normalize(ToolDockerLogs, []byte(bad)); err == nil {
+			t.Errorf("docker_logs accepted %s", bad)
+		}
+	}
+	if _, err := Normalize(ToolDockerPS, []byte(`{"filters":"x"}`)); err == nil {
+		t.Error("docker_ps accepted an unknown field")
+	}
+}
