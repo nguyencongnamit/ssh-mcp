@@ -21,6 +21,9 @@ All notable changes are documented here. The format follows
 - Policy hot reload: `systemctl reload ssh-mcp` (SIGHUP) re-reads
   `policy.yaml`; invalid files are refused and every attempt is audited.
 
+- CA key in AWS KMS (`ca_kms`): an ECC_NIST_P256 key signs every
+  certificate through `kms:Sign`; the private key never leaves KMS (#12).
+
 ### Changed
 - Architecture diagram is now a drawn SVG (light and dark) instead of Mermaid source.
 

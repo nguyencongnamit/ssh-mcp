@@ -9,7 +9,8 @@
 | `tls.cert_file`, `tls.key_file` | serve HTTPS directly |
 | `data_dir` | SQLite audit store |
 | `audit_key` | HMAC key for the audit chain (`ssh-mcp audit keygen`); keep outside `data_dir` |
-| `ca_key` | CA private key, `0600` |
+| `ca_key` | CA private key file, `0600`. Or use `ca_kms` |
+| `ca_kms.key_id`, `.region`, `.profile` | CA key held in AWS KMS (ECC_NIST_P256, SIGN_VERIFY); the private key never leaves KMS. See [deployment](deployment.md#ca-key-in-aws-kms) |
 | `source_address` | CIDR pinned into certificates for direct-transport hosts (SSM hosts get loopback) |
 | `helper_path` | helper location on targets (default `/usr/local/libexec/ssh-mcp-helper`) |
 | `known_hosts` | host keys; `<instance-id> ssh-ed25519 …` for SSM hosts |

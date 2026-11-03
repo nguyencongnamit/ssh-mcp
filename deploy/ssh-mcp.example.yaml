@@ -7,6 +7,7 @@ tls:
 data_dir: /var/lib/ssh-mcp
 audit_key: /etc/ssh-mcp/audit.key    # ssh-mcp audit keygen; keep outside data_dir
 ca_key: /etc/ssh-mcp/ca_key          # 0600, owned by the ssh-mcp user
+# ca_kms: { key_id: alias/ssh-mcp-ca, region: <region> }   # instead of ca_key
 source_address: <private-ip>/32      # direct-transport hosts only; SSM hosts always get loopback
 known_hosts: /etc/ssh-mcp/known_hosts # "<instance-id> ssh-ed25519 AAAA..." per host, or @cert-authority
 policy: /etc/ssh-mcp/policy.yaml

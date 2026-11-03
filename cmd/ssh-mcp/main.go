@@ -98,7 +98,7 @@ func run(args []string) error {
 		if err != nil {
 			return err
 		}
-		c, err := ca.LoadFile(cfg.CAKey)
+		c, err := cfg.LoadCA(context.Background())
 		if err != nil {
 			return err
 		}
@@ -347,7 +347,7 @@ func serve(args []string) error {
 	if err != nil {
 		return err
 	}
-	authority, err := ca.LoadFile(cfg.CAKey)
+	authority, err := cfg.LoadCA(ctx)
 	if err != nil {
 		return err
 	}
