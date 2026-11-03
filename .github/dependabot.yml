@@ -8,9 +8,12 @@ updates:
     directory: /
     schedule: { interval: weekly }
     groups: { actions: { patterns: ["*"] } }
-  - package-ecosystem: docker
-    directory: /testbed/target
-    schedule: { interval: monthly }
+  # The test bed target distribution is a build argument covered by the e2e
+  # matrix (.github/workflows/e2e.yml), so it is not tracked here. New
+  # distribution releases are added to the matrix, not swapped in.
   - package-ecosystem: docker
     directory: /testbed/server
     schedule: { interval: monthly }
+    ignore:
+      - dependency-name: ubuntu
+        update-types: ["version-update:semver-major"]
