@@ -24,7 +24,15 @@ All notable changes are documented here. The format follows
 - CA key in AWS KMS (`ca_kms`): an ECC_NIST_P256 key signs every
   certificate through `kms:Sign`; the private key never leaves KMS (#12).
 
+- `docker_ps` and `docker_logs` tools through a read-only Docker proxy
+  (`ssh-mcp-helper --docker-proxy`, opt-in per host with `DOCKER_PROXY=1`).
+  The proxy answers only container list and non-following logs, rebuilds
+  each upstream request from validated values, and never returns labels,
+  commands, environment or mounts. agent-ro never gets the Docker socket (#8).
+
 ### Changed
+- `tools: ["*"]` in a policy now includes the two Docker tools; they return
+  "not enabled" on hosts without the proxy.
 - Architecture diagram is now a drawn SVG (light and dark) instead of Mermaid source.
 
 ### Documentation

@@ -1,0 +1,29 @@
+[Unit]
+Description=ssh-mcp read-only Docker proxy
+Requires=ssh-mcp-docker-proxy.socket docker.service
+After=docker.service
+
+[Service]
+ExecStart=/usr/local/libexec/ssh-mcp-helper --docker-proxy
+User=ssh-mcp-docker
+Group=ssh-mcp-docker
+# The docker group grants the Docker socket; the proxy answers only two
+# read-only questions (see internal/dockerproxy) and runs locked down.
+SupplementaryGroups=docker
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateNetwork=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+CapabilityBoundingSet=
+SystemCallFilter=@system-service
+SystemCallArchitectures=native
+MemoryMax=128M
+TasksMax=64

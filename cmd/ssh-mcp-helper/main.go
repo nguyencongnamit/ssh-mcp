@@ -7,6 +7,13 @@
 //	agent-sftp: ForceCommand /usr/local/libexec/ssh-mcp-helper --sftp
 //	            a read-only SFTP server that hides every path the policy denies.
 //
+// Optionally, on hosts that enable the Docker tools, systemd runs
+//
+//	ssh-mcp-helper --docker-proxy
+//
+// as a user in the docker group, on a socket only agent-ro can open (see
+// deploy/ssh-mcp-docker-proxy.socket). It is not reachable over SSH.
+//
 // In both modes the effective path policy is the host floor (built-in, or
 // /etc/ssh-mcp/helper-policy.json) intersected with the policy the server
 // put in the CA-signed certificate (read via ExposeAuthInfo). A session
@@ -20,10 +27,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
+	"time"
 
+	"github.com/nguyencongnamit/ssh-mcp/internal/dockerproxy"
 	"github.com/nguyencongnamit/ssh-mcp/internal/helper"
 	"github.com/nguyencongnamit/ssh-mcp/internal/pathpolicy"
 	"github.com/nguyencongnamit/ssh-mcp/internal/protocol"
@@ -45,6 +57,14 @@ func main() {
 			return
 		case "--sftp":
 			sftpMode = true
+		case "--docker-proxy":
+			if os.Geteuid() == 0 || os.Getuid() == 0 {
+				fail(1, "refusing to run as root")
+			}
+			if err := dockerProxy(); err != nil {
+				fail(1, "docker proxy: %v", err)
+			}
+			return
 		default:
 			fail(2, "unknown argument")
 		}
@@ -82,6 +102,35 @@ func main() {
 		}
 		fail(1, "%v", err)
 	}
+}
+
+// dockerProxy serves the read-only Docker API on the socket systemd passes
+// (LISTEN_FDS), or on dockerproxy.DefaultListen when started by hand.
+func dockerProxy() error {
+	var l net.Listener
+	var err error
+	if os.Getenv("LISTEN_FDS") == "1" && os.Getenv("LISTEN_PID") == strconv.Itoa(os.Getpid()) {
+		l, err = net.FileListener(os.NewFile(3, "systemd-socket"))
+	} else {
+		l, err = net.Listen("unix", dockerproxy.DefaultListen)
+	}
+	if err != nil {
+		return err
+	}
+	srv := &http.Server{
+		Handler:           dockerproxy.New(dockerproxy.DefaultUpstream).Handler(),
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		MaxHeaderBytes:    8 << 10,
+	}
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
+	defer stop()
+	go func() { <-ctx.Done(); _ = srv.Close() }()
+	if err := srv.Serve(l); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+	return nil
 }
 
 func fail(code int, format string, a ...any) {

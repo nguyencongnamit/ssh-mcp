@@ -61,6 +61,9 @@ type Helper struct {
 	Now           func() time.Time
 	// procFD enables the /proc/self/fd re-check (Linux).
 	ProcFD bool
+	// DockerSocket is the read-only Docker proxy socket (default
+	// dockerproxy.DefaultListen). The helper never opens the Docker socket.
+	DockerSocket string
 }
 
 // New returns a Helper with production settings.
@@ -123,6 +126,10 @@ func (h *Helper) Run(ctx context.Context, line string, out io.Writer) error {
 		return h.tailFile(w, args.(*protocol.TailArgs))
 	case protocol.ToolListDir:
 		return h.listDir(w, args.(*protocol.DirArgs))
+	case protocol.ToolDockerPS:
+		return h.dockerPS(ctx, w, args.(*protocol.DockerPSArgs))
+	case protocol.ToolDockerLogs:
+		return h.dockerLogs(ctx, w, args.(*protocol.DockerLogsArgs))
 	}
 	return fmt.Errorf("%w: unhandled tool", protocol.ErrInvalid)
 }
