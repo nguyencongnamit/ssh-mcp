@@ -1,7 +1,7 @@
 # Additions to Ubuntu's fusermount3 AppArmor profile for ssh-mcp.
 #
-# Ubuntu 24.04 confines fusermount3 to mount points under the user's home,
-# /mnt, /media, /tmp and /run/user. ssh-mcp mounts its read-only sshfs
+# Newer Ubuntu releases (26.04, not 24.04) confine fusermount3 to a fixed
+# set of mount points (see /etc/apparmor.d/fusermount3). ssh-mcp mounts its read-only sshfs
 # mirrors under its data_dir. These rules allow that directory only.
 #
 # Install:  sudo install -m 0644 fusermount3.local /etc/apparmor.d/local/fusermount3
