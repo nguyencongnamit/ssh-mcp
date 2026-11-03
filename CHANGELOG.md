@@ -16,6 +16,9 @@ All notable changes are documented here. The format follows
 - Architecture diagram is now a drawn SVG (light and dark) instead of Mermaid source.
 
 ### Documentation
+- AppArmor profiles for Ubuntu servers (`deploy/apparmor/`), tested on real
+  24.04 and 26.04 hosts in CI; deployment guide corrected (24.04 needs the
+  user-namespace profile, 26.04 the fusermount3 override) (#11).
 - OpenSSH 9.8+ `PerSourcePenalties`: how to exempt the ssh-mcp source address.
 
 ## [0.1.0] - 2026-11-03
