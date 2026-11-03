@@ -45,6 +45,7 @@ var KnownTools = []string{
 	protocol.ToolJournal, protocol.ToolSystemctlStatus, protocol.ToolFailedUnits,
 	protocol.ToolReadFile, protocol.ToolTailFile, protocol.ToolListDir,
 	ToolSandboxExec,
+	protocol.ToolDockerPS, protocol.ToolDockerLogs,
 }
 
 // LiveExecer runs helper requests (live.Client in production).
@@ -107,6 +108,11 @@ func (s *Server) MCPServer() *mcp.Server {
 		Description: "Last N lines of a file under the allowed paths."}, liveTool[TailArgs](s, protocol.ToolTailFile))
 	mcp.AddTool(ms, &mcp.Tool{Name: protocol.ToolListDir, Annotations: ro,
 		Description: "List a directory under the allowed paths."}, liveTool[DirArgs](s, protocol.ToolListDir))
+	mcp.AddTool(ms, &mcp.Tool{Name: protocol.ToolDockerPS, Annotations: ro,
+		Description: "List containers (id, names, image, state, status, ports) on hosts that enable the read-only Docker proxy. " +
+			"Labels, commands, environment and mounts are never returned."}, liveTool[DockerPSArgs](s, protocol.ToolDockerPS))
+	mcp.AddTool(ms, &mcp.Tool{Name: protocol.ToolDockerLogs, Annotations: ro,
+		Description: "Recent logs of one container (stdout and stderr, never follow) on hosts that enable the read-only Docker proxy."}, liveTool[DockerLogsArgs](s, protocol.ToolDockerLogs))
 	if s.Sandbox != nil && s.Mirrors != nil {
 		mcp.AddTool(ms, &mcp.Tool{Name: ToolSandboxExec, Annotations: ro,
 			Description: "Run a shell command (grep, awk, find, jq, sort, wc...) in an isolated, network-less " +
@@ -168,6 +174,20 @@ type DirArgs struct {
 	Path string `json:"path" jsonschema:"absolute directory path"`
 }
 
+// DockerPSArgs for docker_ps.
+type DockerPSArgs struct {
+	Host string `json:"host" jsonschema:"host ID or Name tag"`
+	All  bool   `json:"all,omitempty" jsonschema:"include stopped containers"`
+}
+
+// DockerLogsArgs for docker_logs.
+type DockerLogsArgs struct {
+	Host         string `json:"host" jsonschema:"host ID or Name tag"`
+	Container    string `json:"container" jsonschema:"container name or ID, from docker_ps"`
+	Lines        int    `json:"lines,omitempty" jsonschema:"max lines (default 200, max 2000)"`
+	SinceSeconds int    `json:"since_seconds,omitempty" jsonschema:"look back this many seconds (default 3600, max 604800)"`
+}
+
 // SandboxArgs for sandbox_exec.
 type SandboxArgs struct {
 	Host    string `json:"host" jsonschema:"host ID or Name tag"`
@@ -177,13 +197,15 @@ type SandboxArgs struct {
 // hostOf extracts the host field from any arg struct.
 type hostOf interface{ hostKey() string }
 
-func (a HostArgs) hostKey() string    { return a.Host }
-func (a PSArgs) hostKey() string      { return a.Host }
-func (a JournalArgs) hostKey() string { return a.Host }
-func (a UnitArgs) hostKey() string    { return a.Host }
-func (a FileArgs) hostKey() string    { return a.Host }
-func (a TailArgs) hostKey() string    { return a.Host }
-func (a DirArgs) hostKey() string     { return a.Host }
+func (a HostArgs) hostKey() string       { return a.Host }
+func (a PSArgs) hostKey() string         { return a.Host }
+func (a JournalArgs) hostKey() string    { return a.Host }
+func (a UnitArgs) hostKey() string       { return a.Host }
+func (a FileArgs) hostKey() string       { return a.Host }
+func (a TailArgs) hostKey() string       { return a.Host }
+func (a DirArgs) hostKey() string        { return a.Host }
+func (a DockerPSArgs) hostKey() string   { return a.Host }
+func (a DockerLogsArgs) hostKey() string { return a.Host }
 
 // helperArgs strips the host field, leaving what the helper expects.
 func helperArgs(v any) (json.RawMessage, error) {

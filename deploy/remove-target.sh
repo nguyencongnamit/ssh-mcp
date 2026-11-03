@@ -10,5 +10,11 @@ pkill -u agent-ro 2>/dev/null || true
 pkill -u agent-sftp 2>/dev/null || true
 userdel agent-ro 2>/dev/null || true
 userdel agent-sftp 2>/dev/null || true
+if [ -e /etc/systemd/system/ssh-mcp-docker-proxy.socket ]; then
+  systemctl disable --now ssh-mcp-docker-proxy.socket ssh-mcp-docker-proxy.service 2>/dev/null || true
+  rm -f /etc/systemd/system/ssh-mcp-docker-proxy.socket /etc/systemd/system/ssh-mcp-docker-proxy.service
+  systemctl daemon-reload
+  userdel ssh-mcp-docker 2>/dev/null || true
+fi
 rm -f /usr/local/libexec/ssh-mcp-helper
 echo "removed"

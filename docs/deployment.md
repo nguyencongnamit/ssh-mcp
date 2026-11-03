@@ -92,6 +92,11 @@ on failure. Existing corporate SSH CA settings for other users are untouched.
 Then tag the instance `ssh-mcp=enabled` and add `<instance-id> <host key>` to
 the server's `known_hosts`.
 
+For `docker_ps` / `docker_logs`, add `DOCKER_PROXY=1` and keep
+`ssh-mcp-docker-proxy.socket` and `.service` next to the script. It creates
+the `ssh-mcp-docker` user (in the `docker` group) and a socket only `agent-ro`
+can open. See [tools](tools.md#docker-tools).
+
 Remove with `deploy/remove-target.sh`; untagging alone cuts access at the IAM
 layer.
 

@@ -31,6 +31,8 @@ const (
 	ToolReadFile        = "read_file"
 	ToolTailFile        = "tail_file"
 	ToolListDir         = "list_dir"
+	ToolDockerPS        = "docker_ps"
+	ToolDockerLogs      = "docker_logs"
 )
 
 // Limits shared by server-side validation and the helper.
@@ -85,6 +87,25 @@ type TailArgs struct {
 	Path  string `json:"path"`
 	Lines int    `json:"lines,omitempty"`
 }
+
+// DockerPSArgs for ToolDockerPS.
+type DockerPSArgs struct {
+	All bool `json:"all,omitempty"`
+}
+
+// DockerLogsArgs for ToolDockerLogs.
+type DockerLogsArgs struct {
+	Container    string `json:"container"`
+	Lines        int    `json:"lines,omitempty"`
+	SinceSeconds int    `json:"since_seconds,omitempty"`
+}
+
+// containerRe matches Docker container names and IDs; no leading '-' or
+// '.', no '/', no whitespace.
+var containerRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$`)
+
+// ValidContainer reports whether s is an acceptable container name or ID.
+func ValidContainer(s string) bool { return containerRe.MatchString(s) }
 
 // DirArgs for ToolListDir.
 type DirArgs struct {
@@ -229,6 +250,23 @@ func Normalize(tool string, raw json.RawMessage) (any, error) {
 		if err := checkPathShape(a.Path); err != nil {
 			return nil, err
 		}
+		return &a, nil
+	case ToolDockerPS:
+		var a DockerPSArgs
+		if err := DecodeStrict(raw, &a); err != nil {
+			return nil, err
+		}
+		return &a, nil
+	case ToolDockerLogs:
+		var a DockerLogsArgs
+		if err := DecodeStrict(raw, &a); err != nil {
+			return nil, err
+		}
+		if !ValidContainer(a.Container) {
+			return nil, invalid("bad container name")
+		}
+		a.Lines = clamp(a.Lines, DefaultLines, MaxJournalLines)
+		a.SinceSeconds = clamp(a.SinceSeconds, DefaultSinceSecs, MaxJournalSince)
 		return &a, nil
 	default:
 		return nil, invalid("unknown tool %q", tool)

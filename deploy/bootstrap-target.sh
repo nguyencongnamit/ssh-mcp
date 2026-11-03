@@ -4,6 +4,9 @@
 #
 #   CA_PUBKEY="ssh-ed25519 AAAA... ssh-mcp user CA" HELPER_URL=... HELPER_SHA256=... ./bootstrap-target.sh
 #
+# DOCKER_PROXY=1 also installs the read-only Docker proxy (docker_ps,
+# docker_logs). It needs the two unit files next to this script.
+#
 # Needs OpenSSH >= 8.2 (Include, ExposeAuthInfo). CI covers Amazon Linux 2023,
 # Ubuntu 22.04/24.04/26.04 and Debian 12. Amazon Linux 2 (OpenSSH 7.4, EOL) is refused.
 set -euo pipefail
@@ -99,6 +102,19 @@ chmod 0644 "$DROPIN"
 sshd -t || restore
 if [ "${SKIP_RELOAD:-0}" != 1 ]; then
   systemctl reload sshd 2>/dev/null || systemctl reload ssh
+fi
+
+if [ "${DOCKER_PROXY:-0}" = 1 ]; then
+  echo "==> docker proxy"
+  getent group docker >/dev/null || { echo "DOCKER_PROXY=1 but there is no docker group" >&2; exit 1; }
+  id ssh-mcp-docker >/dev/null 2>&1 || useradd --system --shell /usr/sbin/nologin --no-create-home --home-dir / ssh-mcp-docker
+  usermod -aG docker ssh-mcp-docker
+  here=$(cd "$(dirname "$0")" && pwd)
+  install -m 0644 "$here/ssh-mcp-docker-proxy.socket" "$here/ssh-mcp-docker-proxy.service" /etc/systemd/system/
+  if [ "${SKIP_RELOAD:-0}" != 1 ]; then
+    systemctl daemon-reload
+    systemctl enable --now ssh-mcp-docker-proxy.socket
+  fi
 fi
 
 echo "==> done. Now tag the instance ssh-mcp=enabled and add its host key to the server's known_hosts:"

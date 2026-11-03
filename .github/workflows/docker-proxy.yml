@@ -1,0 +1,68 @@
+name: Docker proxy
+
+# Installs the read-only Docker proxy with the real bootstrap script and the
+# real systemd units on a runner with Docker, then probes it as agent-ro.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  proxy:
+    name: Docker proxy on a real host
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with: { go-version-file: go.mod, cache: true }
+      - name: Bootstrap with DOCKER_PROXY=1
+        run: |
+          sudo apt-get install -y -qq openssh-server >/dev/null
+          CGO_ENABLED=0 go build -trimpath -o /tmp/ssh-mcp-helper ./cmd/ssh-mcp-helper
+          ssh-keygen -q -t ed25519 -N '' -f /tmp/ca
+          sudo CA_PUBKEY="$(cat /tmp/ca.pub)" HELPER_SRC=/tmp/ssh-mcp-helper \
+               HELPER_SHA256="$(sha256sum /tmp/ssh-mcp-helper | cut -d' ' -f1)" \
+               DOCKER_PROXY=1 bash deploy/bootstrap-target.sh
+          systemctl status ssh-mcp-docker-proxy.socket --no-pager
+      - name: A container with a secret in its labels, command and env
+        run: |
+          docker run -d --name web --label db.password=SECRET-LABEL -e API_KEY=SECRET-ENV \
+            busybox sh -c 'echo hello-from-web; echo oops >&2; sleep 600' --password=SECRET-CMD
+          sleep 2
+      - name: Probe as agent-ro
+        run: |
+          px() { sudo -u agent-ro curl -sS --unix-socket /run/ssh-mcp/docker.sock -o /tmp/body -w '%{http_code}' "$@"; }
+          code=$(px http://p/containers); cat /tmp/body; echo
+          [ "$code" = 200 ] && grep -q '"web"' /tmp/body
+          if grep -qE 'SECRET-(LABEL|ENV|CMD)' /tmp/body; then echo "::error::secret leaked from /containers"; exit 1; fi
+          code=$(px "http://p/containers/web/logs?tail=10&since=0"); cat /tmp/body; echo
+          [ "$code" = 200 ] && grep -q hello-from-web /tmp/body && grep -q oops /tmp/body
+          for req in "-X POST http://p/containers/web/stop" "http://p/containers/web/json" "http://p/v1.43/containers/json" \
+                     "http://p/containers/web/logs?tail=10&since=0&follow=1" "http://p/images/json"; do
+            # shellcheck disable=SC2086
+            code=$(px $req); echo "$req -> $code"
+            [ "$code" -ge 400 ] || { echo "::error::$req was not refused"; exit 1; }
+          done
+          docker ps --format '{{.Names}} {{.Status}}' | grep -q '^web Up' || { echo "::error::container was stopped"; exit 1; }
+      - name: The Docker socket itself and other users stay closed
+        run: |
+          if sudo -u agent-ro curl -sS --unix-socket /var/run/docker.sock http://d/containers/json; then
+            echo "::error::agent-ro can open the Docker socket"; exit 1
+          fi
+          if sudo -u nobody curl -sS --unix-socket /run/ssh-mcp/docker.sock http://p/containers; then
+            echo "::error::another user can open the proxy socket"; exit 1
+          fi
+          id agent-ro | grep -vq docker
+      - name: Unit hardening score
+        if: always()
+        run: systemd-analyze security ssh-mcp-docker-proxy.service --no-pager | tail -3
+      - name: Logs on failure
+        if: failure()
+        run: sudo journalctl -u ssh-mcp-docker-proxy.service -u ssh-mcp-docker-proxy.socket --no-pager | tail -50

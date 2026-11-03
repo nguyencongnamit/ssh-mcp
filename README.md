@@ -96,6 +96,7 @@ More in the [quick start](docs/quickstart.md).
 | `journal` | systemd journal by unit, time window and priority |
 | `systemctl_status`, `failed_units` | unit state |
 | `read_file`, `tail_file`, `list_dir` | files under allowed paths |
+| `docker_ps`, `docker_logs` | containers and their recent logs, through a read-only Docker proxy (opt-in per host) |
 | `sandbox_exec` | `grep` / `awk` / `find` / `jq` over a read-only mirror, no network |
 
 No tool sends a raw command to a target. Full reference: [docs/tools.md](docs/tools.md).
