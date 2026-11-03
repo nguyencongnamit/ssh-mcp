@@ -66,9 +66,16 @@ jobs:
             return $rc
           }
           SH
-      - name: Show the stock fusermount3 profile
+      - name: Show the stock profiles
         run: |
           grep PRETTY_NAME /etc/os-release
+          echo "userns restriction: $(sysctl -n kernel.apparmor_restrict_unprivileged_userns)"
+          ls /etc/apparmor.d | grep -iE 'bwrap|userns' || true
+          sudo aa-status | grep -iE 'bwrap|userns' || true
+          for f in /etc/apparmor.d/bwrap*; do [ -e "$f" ] && { echo "--- $f"; sudo cat "$f"; }; done
+          if sudo -u ssh-mcp bwrap --unshare-all --ro-bind / / true; then
+            echo "bwrap works unprofiled on this release"; echo "USERNS_CONFINED=0" >> "$GITHUB_ENV"
+          else echo "USERNS_CONFINED=1" >> "$GITHUB_ENV"; fi
           if [ -e /etc/apparmor.d/fusermount3 ]; then sudo cat /etc/apparmor.d/fusermount3; echo "FUSE_CONFINED=1" >> "$GITHUB_ENV"
           else echo "no fusermount3 profile on this release"; echo "FUSE_CONFINED=0" >> "$GITHUB_ENV"; fi
       - name: Without the profiles, both are refused
