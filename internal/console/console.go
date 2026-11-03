@@ -44,6 +44,7 @@ var assets embed.FS
 type Console struct {
 	Store        *store.Store
 	Policy       *policy.Policy
+	PolicyRef    *policy.Holder // when set, takes precedence over Policy
 	Inventory    inventory.Source
 	User         string
 	PasswordHash string // bcrypt
@@ -426,7 +427,7 @@ func (c *Console) render(w http.ResponseWriter, r *http.Request, name, title str
 	}
 	tools := c.Tools
 	if len(tools) == 0 {
-		tools = c.Policy.ToolNames()
+		tools = c.activePolicy().ToolNames()
 	}
 	for _, t := range tools {
 		items = append(items, paletteItem{t, "tool", "/activity?" + url.Values{"tool": {t}}.Encode()})
@@ -563,7 +564,7 @@ func (c *Console) hosts(w http.ResponseWriter, r *http.Request) {
 		if sp == nil {
 			sp = make([]int64, 24)
 		}
-		rows = append(rows, hostRow{Host: h, Activity: act[h.ID], Rules: c.Policy.RulesForHost(h), Spark: sp})
+		rows = append(rows, hostRow{Host: h, Activity: act[h.ID], Rules: c.activePolicy().RulesForHost(h), Spark: sp})
 	}
 	c.render(w, r, "hosts", "Hosts", rows)
 }
@@ -585,7 +586,7 @@ func (c *Console) identities(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Console) policy(w http.ResponseWriter, r *http.Request) {
-	c.render(w, r, "policy", "Policy", c.Policy)
+	c.render(w, r, "policy", "Policy", c.activePolicy())
 }
 
 func (c *Console) integrity(w http.ResponseWriter, r *http.Request) {
@@ -650,4 +651,11 @@ func safeBack(p string) string {
 		return p
 	}
 	return "/"
+}
+
+func (c *Console) activePolicy() *policy.Policy {
+	if c.PolicyRef != nil {
+		return c.PolicyRef.Load()
+	}
+	return c.Policy
 }

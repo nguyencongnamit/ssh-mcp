@@ -385,9 +385,11 @@ func serve(args []string) error {
 		dialer.Direct = &transport.Direct{Timeout: 10 * time.Second}
 	}
 
+	polRef := policy.NewHolder(pol)
+	reloader := &server.Reloader{Path: cfg.Policy, Holder: polRef, CA: authority, Store: st, Log: log}
 	srv := &server.Server{
 		Store:     st,
-		Policy:    pol,
+		PolicyRef: polRef,
 		Inventory: inv,
 		Live:      &live.Client{CA: authority, Dialer: dialer, HostKey: hostKeys, DirectSource: cfg.SourceAddress},
 		Redactor:  redact.Default(),
@@ -417,6 +419,8 @@ func serve(args []string) error {
 		}
 		defer m.Close()
 		srv.Mirrors = m
+		reloader.Mirrors = m
+		reloader.SandboxPrefixes = cfg.Sandbox.Prefixes
 		runner := sandbox.NewRunner(cfg.Sandbox.MaxConcurrent)
 		if err := runner.DetectFeatures(); err != nil {
 			return err
@@ -438,6 +442,21 @@ func serve(args []string) error {
 		}
 		srv.Sandbox = runner
 	}
+
+	// SIGHUP re-reads policy.yaml (systemctl reload ssh-mcp).
+	hup := make(chan os.Signal, 1)
+	signal.Notify(hup, syscall.SIGHUP)
+	defer signal.Stop(hup)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-hup:
+				_ = reloader.Reload(ctx) // logged and audited either way
+			}
+		}
+	}()
 
 	authr, err := authn.New(ctx, st, cfg.OIDC)
 	if err != nil {
@@ -475,7 +494,7 @@ func serve(args []string) error {
 	}()
 	if cfg.Console.Listen != "" {
 		con := &console.Console{
-			Store: st, Policy: pol, Inventory: inv, Version: version, Log: log,
+			Store: st, PolicyRef: polRef, Inventory: inv, Version: version, Log: log,
 			User: cfg.Console.User, PasswordHash: cfg.Console.PasswordHash, Tools: server.KnownTools,
 		}
 		if cfg.Console.Timezone != "" {

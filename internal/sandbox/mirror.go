@@ -324,6 +324,27 @@ func (m *Mirrors) sshfsArgs(h inventory.Host, remote, mnt string) ([]string, err
 	return []string{bin, target, mnt, "-o", strings.Join(opts, ",")}, nil
 }
 
+// Reset unmounts every mirror and discards its certificate. The next
+// sandbox call remounts with a freshly issued certificate, so a changed path
+// policy applies to mirrors at once instead of at the next renewal.
+func (m *Mirrors) Reset() {
+	m.mu.Lock()
+	states := make([]*mirrorState, 0, len(m.hosts))
+	for _, st := range m.hosts {
+		states = append(states, st)
+	}
+	m.mu.Unlock()
+	for _, st := range states {
+		// Waits for a mount in progress on this host, so it cannot survive
+		// the reset with the old certificate.
+		st.mu.Lock()
+		m.unmountHost(st.host.ID)
+		m.removeKeys(st.host.ID)
+		st.mounted = false
+		st.mu.Unlock()
+	}
+}
+
 // Close unmounts everything.
 func (m *Mirrors) Close() {
 	m.mu.Lock()
