@@ -52,7 +52,7 @@ jobs:
         run: |
           cat > /tmp/checks.sh <<'SH'
           bwrap_check() {
-            sudo -u ssh-mcp /usr/local/bin/ssh-mcp bwrap --unshare-all --ro-bind / / --proc /proc --dev /dev true
+            sudo -u ssh-mcp /usr/local/bin/ssh-mcp -- bwrap --unshare-all --ro-bind / / --proc /proc --dev /dev true
           }
           mount_check() {
             mnt=/var/lib/ssh-mcp/mirrors/web-1/etc
@@ -97,6 +97,12 @@ jobs:
           fi
           # A mount point outside data_dir is still refused where confined.
           [ "$FUSE_CONFINED" = 1 ] || exit 0
+          # So is a read-write mount inside it.
+          if sudo -u ssh-mcp sshfs -o IdentityFile=/var/lib/ssh-mcp/id,UserKnownHostsFile=/var/lib/ssh-mcp/known_hosts,BatchMode=yes \
+               ssh-mcp@127.0.0.1:/etc /var/lib/ssh-mcp/mirrors/web-1/etc; then
+            sudo -u ssh-mcp fusermount3 -u /var/lib/ssh-mcp/mirrors/web-1/etc
+            echo "::error::read-write sshfs mount allowed under data_dir"; exit 1
+          fi
           sudo install -d -o ssh-mcp /srv/elsewhere
           if sudo -u ssh-mcp sshfs -o ro,IdentityFile=/var/lib/ssh-mcp/id,UserKnownHostsFile=/var/lib/ssh-mcp/known_hosts,BatchMode=yes \
                ssh-mcp@127.0.0.1:/etc /srv/elsewhere; then

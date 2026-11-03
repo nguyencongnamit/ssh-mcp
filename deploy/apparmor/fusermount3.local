@@ -2,11 +2,12 @@
 #
 # Newer Ubuntu releases (26.04, not 24.04) confine fusermount3 to a fixed
 # set of mount points (see /etc/apparmor.d/fusermount3). ssh-mcp mounts its read-only sshfs
-# mirrors under its data_dir. These rules allow that directory only.
+# mirrors under its data_dir. These rules allow read-only sshfs mounts in
+# that directory only, with the same nosuid,nodev flags the stock rules use.
 #
 # Install:  sudo install -m 0644 fusermount3.local /etc/apparmor.d/local/fusermount3
 #           sudo apparmor_parser -r /etc/apparmor.d/fusermount3
 # Adjust the path if data_dir is not /var/lib/ssh-mcp.
 
-mount fstype=fuse.sshfs -> /var/lib/ssh-mcp/mirrors/**/,
+mount fstype=fuse.sshfs options=(nosuid,nodev,ro) -> /var/lib/ssh-mcp/mirrors/**/,
 umount /var/lib/ssh-mcp/mirrors/**/,
