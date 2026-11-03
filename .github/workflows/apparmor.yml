@@ -36,8 +36,11 @@ jobs:
           sudo useradd --system --create-home --home-dir /var/lib/ssh-mcp --shell /bin/sh ssh-mcp
           sudo install -d -o ssh-mcp -g ssh-mcp /var/lib/ssh-mcp/mirrors/web-1/etc
           # Stand-in for the server binary at the profile's path: it only
-          # execs its arguments, as ssh-mcp execs bwrap.
-          sudo install -m 0755 /usr/bin/env /usr/local/bin/ssh-mcp
+          # execs its arguments, as ssh-mcp execs bwrap. (Copying env does not
+          # work: 26.04's coreutils is a multicall binary keyed on its name.)
+          printf '#include <unistd.h>\nint main(int c, char **v) { execvp(v[1], v + 1); return 127; }\n' > /tmp/stand-in.c
+          gcc -O2 -o /tmp/stand-in /tmp/stand-in.c
+          sudo install -m 0755 /tmp/stand-in /usr/local/bin/ssh-mcp
           echo "userns restriction: $(sysctl -n kernel.apparmor_restrict_unprivileged_userns)"
           test "$(sysctl -n kernel.apparmor_restrict_unprivileged_userns)" = 1
           sudo aa-status --enabled
@@ -52,7 +55,7 @@ jobs:
         run: |
           cat > /tmp/checks.sh <<'SH'
           bwrap_check() {
-            sudo -u ssh-mcp /usr/local/bin/ssh-mcp -- bwrap --unshare-all --ro-bind / / --proc /proc --dev /dev true
+            sudo -u ssh-mcp /usr/local/bin/ssh-mcp bwrap --unshare-all --ro-bind / / --proc /proc --dev /dev true
           }
           mount_check() {
             mnt=/var/lib/ssh-mcp/mirrors/web-1/etc
