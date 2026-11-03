@@ -6,6 +6,11 @@ All notable changes are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0-rc.1] - 2026-11-03
+
+Release candidate. Not yet run on a production fleet; v0.2.0 waits for a
+staging pilot on real hosts (see ROADMAP.md).
+
 ### Added
 - End-to-end attack suite now runs on every pull request against Ubuntu 22.04,
   24.04 and 26.04, Debian 12 and Amazon Linux 2023 targets (#7).
@@ -17,23 +22,18 @@ All notable changes are documented here. The format follows
   (#9).
 - Provider-neutral `who: { group: ... }` in policy; `entra_group` remains an
   alias. User subjects other than Entra object IDs are accepted (case-sensitive).
-
 - Policy hot reload: `systemctl reload ssh-mcp` (SIGHUP) re-reads
   `policy.yaml`; invalid files are refused and every attempt is audited.
-
 - CA key in AWS KMS (`ca_kms`): an ECC_NIST_P256 key signs every
   certificate through `kms:Sign`; the private key never leaves KMS (#12).
-
 - `docker_ps` and `docker_logs` tools through a read-only Docker proxy
   (`ssh-mcp-helper --docker-proxy`, opt-in per host with `DOCKER_PROXY=1`).
   The proxy answers only container list and non-following logs, rebuilds
   each upstream request from validated values, and never returns labels,
   commands, environment or mounts. agent-ro never gets the Docker socket (#8).
-
 - Opt-in alerts to Slack and Microsoft Teams (same alerts to both): refusal
   bursts, calls the target refused after the server allowed them, and admin
   actions, each linking to the console call trail. Off by default.
-
 - Jump-host transport (`transport: jump`) for fleets outside AWS or without
   SSM: one bastion connection per call, TCP forwarding only, certificates
   pinned to the bastion's address; sandbox mirrors use `ssh -W` through the
@@ -85,5 +85,6 @@ First public preview.
 - Fixed 13 findings from a pre-release adversarial review (see
   `docs/threat-model.md`).
 
-[Unreleased]: https://github.com/nguyencongnamit/ssh-mcp/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/nguyencongnamit/ssh-mcp/compare/v0.2.0-rc.1...HEAD
+[0.2.0-rc.1]: https://github.com/nguyencongnamit/ssh-mcp/compare/v0.1.0...v0.2.0-rc.1
 [0.1.0]: https://github.com/nguyencongnamit/ssh-mcp/releases/tag/v0.1.0

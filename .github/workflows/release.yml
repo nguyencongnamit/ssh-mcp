@@ -92,3 +92,4 @@ jobs:
         with:
           files: release/*
           body_path: notes.md
+          prerelease: ${{ contains(github.ref_name, '-') }}

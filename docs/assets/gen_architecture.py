@@ -119,7 +119,7 @@ def render(t):
     box(980, 314, 260, 86, "agent-sftp → helper --sftp", ["read-only SFTP", "denied paths do not exist"], tsize=14)
     path([(912, 172), (980, 172)])
     path([(912, 357), (980, 357)])
-    a(f'<text x="982" y="112" font-family="{SANS}" font-size="12.5" font-weight="600" fill="{t["label"]}">SSH over SSM or direct</text>')
+    a(f'<text x="982" y="112" font-family="{SANS}" font-size="12.5" font-weight="600" fill="{t["label"]}">SSH over SSM, direct or jump host</text>')
     a(f'<text x="982" y="304" font-family="{SANS}" font-size="12.5" font-weight="600" fill="{t["label"]}">SFTP over the same transport</text>')
 
     # sshd guarantees

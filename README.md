@@ -141,10 +141,9 @@ forwarding): [docs/deployment.md](docs/deployment.md) ·
 
 | | |
 |---|---|
-| Tests | 63 unit/integration tests (race detector), 3 fuzz targets in CI, and 12 end-to-end suites against real OpenSSH targets on five distributions, including direct attacks on sshd, fork and memory bombs, and an encoding-bypass regression |
-| Tests | 63 unit/integration tests (race detector) and 13 end-to-end suites against real OpenSSH targets on five distributions, including direct attacks on sshd, fork and memory bombs, and an encoding-bypass regression |
+| Tests | 89 unit/integration tests (race detector), 3 fuzz targets, and 14 end-to-end suites against real OpenSSH targets on five distributions (including through an SSH jump host), with direct attacks on sshd, fork and memory bombs, and an encoding-bypass regression |
 | Security review | 13 findings from a pre-release adversarial review, all fixed ([threat model](docs/threat-model.md#independent-review)) |
-| CI | gofmt, vet, coverage floor on boundary packages, govulncheck, ShellCheck, CodeQL, OpenSSF Scorecard |
+| CI | gofmt, vet, coverage floor on boundary packages, fuzzing, govulncheck, ShellCheck, CodeQL, OpenSSF Scorecard; AppArmor profiles and the Docker proxy installed and probed on real Ubuntu hosts |
 | Releases | reproducible builds (rebuilt and diffed in CI), `SHA256SUMS`, CycloneDX SBOM, SLSA build provenance (`gh attestation verify`) |
 
 ## Status
