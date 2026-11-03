@@ -11,6 +11,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/nguyencongnamit/ssh-mcp/internal/alerts"
 	"github.com/nguyencongnamit/ssh-mcp/internal/authn"
 	"github.com/nguyencongnamit/ssh-mcp/internal/ca"
 )
@@ -32,6 +33,7 @@ type Config struct {
 	KnownHosts    string            `yaml:"known_hosts"`
 	Policy        string            `yaml:"policy"`
 	OIDC          *authn.OIDCConfig `yaml:"oidc"`
+	Alerts        alerts.Config     `yaml:"alerts"`
 	Inventory     struct {
 		Static string `yaml:"static"`
 		EC2    []struct {
@@ -81,7 +83,7 @@ func Load(path string) (*Config, error) {
 			*p = filepath.Join(base, *p)
 		}
 	}
-	for _, p := range []*string{&c.DataDir, &c.AuditKey, &c.CAKey, &c.KnownHosts, &c.Policy, &c.Inventory.Static, &c.TLS.CertFile, &c.TLS.KeyFile} {
+	for _, p := range []*string{&c.Alerts.SlackWebhookFile, &c.Alerts.TeamsWebhookFile, &c.DataDir, &c.AuditKey, &c.CAKey, &c.KnownHosts, &c.Policy, &c.Inventory.Static, &c.TLS.CertFile, &c.TLS.KeyFile} {
 		abs(p)
 	}
 	if c.Listen == "" {
