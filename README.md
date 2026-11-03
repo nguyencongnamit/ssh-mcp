@@ -63,12 +63,10 @@ everything above them fails.
 | 6 | Policy | ssh-mcp server | who × host tags × tool, rate limits, deny by default, kill switch |
 | 7 | Output | ssh-mcp server | size cap, secret redaction, untrusted-data fence, hash-chained audit |
 
-```mermaid
-flowchart LR
-  A[AI agent] -->|MCP + OIDC / bot token| S[ssh-mcp server<br/>policy · CA · audit · redaction]
-  S -->|5-min cert, SSH over SSM| H[target: agent-ro<br/>ssh-mcp-helper]
-  S -->|sandbox_exec| B[bubblewrap<br/>no network] --> M[read-only mirror] -->|SFTP| F[target: agent-sftp<br/>helper --sftp]
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/architecture-dark.svg">
+  <img src="docs/assets/architecture-light.svg" alt="ssh-mcp architecture: callers connect over MCP; the server authenticates, applies the kill switch and policy, then either issues a per-call SSH certificate to run a typed tool through the forced helper on the target, or runs free-form search in a no-network bubblewrap sandbox over a read-only sshfs mirror served by the helper's SFTP mode. Output passes size cap, redaction and an untrusted fence back to the caller, and every decision and result goes to the hash-chained audit log viewed in the admin console." width="100%">
+</picture>
 
 Details: [architecture](docs/architecture.md) · [threat model](docs/threat-model.md)
 

@@ -6,33 +6,10 @@ sensitive part: the SSH certificate authority, the policy and the audit log.
 Targets trust only its short-lived certificates, and only as two read-only
 users.
 
-```mermaid
-flowchart LR
-  subgraph Clients
-    A1[Claude Code / Desktop]
-    A2[Bots & CI agents]
-  end
-  subgraph Server["ssh-mcp server"]
-    AU[AuthN<br/>OIDC · bot tokens]
-    PO[Policy<br/>who × host × tool]
-    CA[SSH CA<br/>per-call certs]
-    RD[Redaction +<br/>untrusted fence]
-    AD[(Audit log<br/>hash chain)]
-    SB[bubblewrap sandbox<br/>no network]
-    MI[sshfs read-only mirror]
-    CO[Admin console]
-  end
-  subgraph Target["each Linux target"]
-    RO[agent-ro<br/>force-command helper]
-    SF[agent-sftp<br/>helper --sftp, read-only]
-  end
-  A1 & A2 -->|MCP over HTTPS| AU --> PO
-  PO -->|live tool| CA -->|SSH over SSM or direct| RO
-  PO -->|sandbox_exec| SB --> MI -->|SFTP| SF
-  RO & SB --> RD --> A1 & A2
-  PO & RD --> AD
-  CO --- AD
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/architecture-dark.svg">
+  <img src="assets/architecture-light.svg" alt="ssh-mcp architecture: callers connect over MCP; the server authenticates, applies the kill switch and policy, then either issues a per-call SSH certificate to run a typed tool through the forced helper on the target, or runs free-form search in a no-network bubblewrap sandbox over a read-only sshfs mirror served by the helper's SFTP mode. Output passes size cap, redaction and an untrusted fence back to the caller, and every decision and result goes to the hash-chained audit log viewed in the admin console." width="100%">
+</picture>
 
 ## Two tool paths
 
