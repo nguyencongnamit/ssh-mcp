@@ -1,0 +1,20 @@
+# AppArmor profile for the ssh-mcp server on Ubuntu 24.04+.
+#
+# Ubuntu 24.04 denies unprivileged user namespaces unless the calling program
+# has a profile that grants "userns". This profile grants it to the ssh-mcp
+# binary only, so its bubblewrap sandboxes work while the system-wide
+# restriction (kernel.apparmor_restrict_unprivileged_userns=1) stays on for
+# everything else. bwrap, started by ssh-mcp, runs under this profile.
+#
+# Install:  sudo install -m 0644 ssh-mcp /etc/apparmor.d/ssh-mcp
+#           sudo apparmor_parser -r /etc/apparmor.d/ssh-mcp
+# Adjust the path below if the binary is not /usr/local/bin/ssh-mcp.
+
+abi <abi/4.0>,
+include <tunables/global>
+
+profile ssh-mcp /usr/local/bin/ssh-mcp flags=(unconfined) {
+  userns,
+
+  include if exists <local/ssh-mcp>
+}
