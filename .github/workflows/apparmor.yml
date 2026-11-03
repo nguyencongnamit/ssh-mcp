@@ -58,6 +58,10 @@ jobs:
             return $rc
           }
           SH
+      - name: Show the stock fusermount3 profile
+        run: |
+          sudo aa-status | grep -iE 'fuse|userns' || true
+          sudo cat /etc/apparmor.d/fusermount3 || true
       - name: Without the profiles, both are refused
         run: |
           . /tmp/checks.sh
