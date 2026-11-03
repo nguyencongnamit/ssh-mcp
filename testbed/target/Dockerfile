@@ -1,8 +1,19 @@
-FROM ubuntu:22.04
+# The target distribution is a build argument so CI can run the same suite
+# against every supported family (see .github/workflows/e2e.yml).
+ARG BASE=ubuntu:22.04
+FROM ${BASE}
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y --no-install-recommends \
-      openssh-server procps iproute2 systemd coreutils \
-    && rm -rf /var/lib/apt/lists/* && mkdir -p /run/sshd \
+RUN set -eu; \
+    if command -v apt-get >/dev/null; then \
+      apt-get update && apt-get install -y --no-install-recommends \
+        openssh-server procps iproute2 systemd coreutils findutils \
+      && rm -rf /var/lib/apt/lists/*; \
+    elif command -v dnf >/dev/null; then \
+      dnf install -y --setopt=install_weak_deps=False \
+        openssh-server procps-ng iproute systemd shadow-utils findutils tar \
+      && dnf clean all; \
+    else echo "unsupported base image" >&2; exit 1; fi; \
+    mkdir -p /run/sshd \
     && rm -f /etc/ssh/ssh_host_* && ssh-keygen -q -t ed25519 -N '' -f /etc/ssh/ssh_host_ed25519_key
 # The real production bootstrap, unmodified, on Ubuntu's stock sshd_config.
 COPY ssh-mcp-ca.pub ssh-mcp-helper bootstrap-target.sh /tmp/bootstrap/
@@ -11,6 +22,11 @@ RUN CA_PUBKEY="$(cat /tmp/bootstrap/ssh-mcp-ca.pub)" \
     HELPER_SHA256="$(sha256sum /tmp/bootstrap/ssh-mcp-helper | cut -d' ' -f1)" \
     SKIP_RELOAD=1 bash /tmp/bootstrap/bootstrap-target.sh && rm -rf /tmp/bootstrap
 COPY 10-testbed.conf /etc/ssh/sshd_config.d/10-testbed.conf
+# OpenSSH 9.8+ penalises a source address after failed logins. The attack
+# suite fails logins on purpose from one address, which would then lock out
+# the tests that follow. Production guidance: docs/deployment.md.
+RUN if sshd -t -o PerSourcePenalties=no 2>/dev/null; then \
+      echo 'PerSourcePenalties no' >> /etc/ssh/sshd_config.d/10-testbed.conf; fi
 # Fabricated fixtures: ordinary logs, a world-readable config with a fake
 # credential, secret files the policy must hide, and root-only files the OS
 # must hide.

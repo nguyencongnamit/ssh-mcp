@@ -140,16 +140,16 @@ forwarding): [docs/deployment.md](docs/deployment.md) ·
 
 | | |
 |---|---|
-| Tests | 63 unit/integration tests (race detector) and 12 end-to-end suites against a real OpenSSH target, including direct attacks on sshd, fork and memory bombs, and an encoding-bypass regression |
+| Tests | 63 unit/integration tests (race detector) and 12 end-to-end suites against real OpenSSH targets on five distributions, including direct attacks on sshd, fork and memory bombs, and an encoding-bypass regression |
 | Security review | 13 findings from a pre-release adversarial review, all fixed ([threat model](docs/threat-model.md#independent-review)) |
 | CI | gofmt, vet, coverage floor on boundary packages, govulncheck, ShellCheck, CodeQL, OpenSSF Scorecard |
 | Releases | reproducible builds (rebuilt and diffed in CI), `SHA256SUMS`, CycloneDX SBOM, SLSA build provenance (`gh attestation verify`) |
 
 ## Status
 
-**v0.1.0 is a public preview.** The boundary is tested end to end in the
-Docker test bed (Ubuntu 22.04 target), but it has not yet been run on a
-production fleet. Read the [known limits](docs/threat-model.md#known-limits)
+**ssh-mcp is a public preview.** Every pull request runs the end-to-end
+attack suite against Ubuntu 22.04, 24.04 and 26.04, Debian 12 and Amazon
+Linux 2023 targets, but it has not yet been run on a production fleet. Read the [known limits](docs/threat-model.md#known-limits)
 before you deploy, especially: secret redaction is a filter, so fix
 permissions on world-readable secrets.
 

@@ -6,8 +6,15 @@ All notable changes are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- End-to-end attack suite now runs on every pull request against Ubuntu 22.04,
+  24.04 and 26.04, Debian 12 and Amazon Linux 2023 targets (#7).
+
 ### Changed
 - Architecture diagram is now a drawn SVG (light and dark) instead of Mermaid source.
+
+### Documentation
+- OpenSSH 9.8+ `PerSourcePenalties`: how to exempt the ssh-mcp source address.
 
 ## [0.1.0] - 2026-11-03
 

@@ -4,8 +4,8 @@
 #
 #   CA_PUBKEY="ssh-ed25519 AAAA... ssh-mcp user CA" HELPER_URL=... HELPER_SHA256=... ./bootstrap-target.sh
 #
-# Needs OpenSSH >= 8.2 (Include, ExposeAuthInfo): Amazon Linux 2023,
-# Ubuntu 20.04+, Debian 11+. Amazon Linux 2 (OpenSSH 7.4, EOL) is refused.
+# Needs OpenSSH >= 8.2 (Include, ExposeAuthInfo). CI covers Amazon Linux 2023,
+# Ubuntu 22.04/24.04/26.04 and Debian 12. Amazon Linux 2 (OpenSSH 7.4, EOL) is refused.
 set -euo pipefail
 
 : "${CA_PUBKEY:?set CA_PUBKEY to the ssh-mcp CA public key line}"

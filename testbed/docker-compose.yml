@@ -3,7 +3,9 @@
 name: ssh-mcp-testbed
 services:
   target:
-    build: ./target
+    build:
+      context: ./target
+      args: { BASE: "${TARGET_IMAGE:-ubuntu:22.04}" }
     networks: [bed]
     # Exposed on localhost only so the e2e suite can attack sshd directly.
     ports: ["127.0.0.1:18472:22"]

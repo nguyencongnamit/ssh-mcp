@@ -34,10 +34,20 @@ NAT route, add VPC endpoints for `ssm`, `ssmmessages` and `ec2messages`.
 
 ## Targets
 
-Requirements: systemd Linux with OpenSSH 8.2+ (for example Amazon Linux 2023,
-Ubuntu 20.04+, Debian 11+). The test bed verifies Ubuntu 22.04; other
-distributions are expected to work but are not yet covered by CI. Run once,
-as root (for example through SSM Run Command):
+Requirements: systemd Linux with OpenSSH 8.2+. Every pull request runs the
+full end-to-end attack suite against these targets:
+
+| Target | OpenSSH |
+|---|---|
+| Ubuntu 22.04 | 8.9 |
+| Ubuntu 24.04 | 9.6 |
+| Ubuntu 26.04 | 10.2 |
+| Debian 12 | 9.2 |
+| Amazon Linux 2023 | 9.9 |
+
+Ubuntu 20.04 and Debian 11 also meet the requirements but are not in CI.
+Amazon Linux 2 (OpenSSH 7.4) is refused. Run once, as root (for example
+through SSM Run Command):
 
 ```sh
 CA_PUBKEY="$(cat ssh-mcp-ca.pub)" \
@@ -55,6 +65,25 @@ the server's `known_hosts`.
 
 Remove with `deploy/remove-target.sh`; untagging alone cuts access at the IAM
 layer.
+
+### OpenSSH 9.8+ source penalties
+
+OpenSSH 9.8 and later (Amazon Linux 2023 ships 9.9, Ubuntu 26.04 ships 10.2) penalise a source address
+after failed logins or crashes (`PerSourcePenalties`, on by default). Every
+call from ssh-mcp comes from one address, so a burst of failures, such as a
+rotated CA not yet rolled out to a host, can block all agents from that host
+for a while. Over SSM the source is the host's own loopback. If you see
+`drop connection ... penalty` in the target's sshd log, exempt the ssh-mcp
+source rather than turning penalties off:
+
+```
+# /etc/ssh/sshd_config.d/40-ssh-mcp-penalties.conf
+PerSourcePenaltyExemptList 127.0.0.1/32,::1/128   # SSM transport
+# PerSourcePenaltyExemptList 10.0.1.10/32         # direct transport: the server's address
+```
+
+The exemption covers only that address; every other source is still
+penalised.
 
 ## Console
 

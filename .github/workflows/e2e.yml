@@ -1,7 +1,8 @@
 name: E2E
 
 # Builds the Docker test bed (a real Linux target bootstrapped with
-# deploy/bootstrap-target.sh, plus the server) and runs the attack suite.
+# deploy/bootstrap-target.sh, plus the server) and runs the attack suite
+# against every supported target distribution.
 on:
   push:
     branches: [main]
@@ -17,9 +18,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  e2e:
+  target:
+    name: e2e (${{ matrix.target }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # Every target family the bootstrap supports. The server container
+        # stays on Ubuntu 22.04; only the target distribution changes.
+        target: [ubuntu:22.04, ubuntu:24.04, ubuntu:26.04, debian:12, amazonlinux:2023]
+    env:
+      TARGET_IMAGE: ${{ matrix.target }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { persist-credentials: false }
@@ -46,3 +56,14 @@ jobs:
         if: always()
         working-directory: testbed
         run: docker compose down -v
+
+  # Single required status check for branch protection, whatever the matrix.
+  e2e:
+    if: always()
+    needs: target
+    runs-on: ubuntu-latest
+    steps:
+      - name: All targets passed
+        env:
+          RESULT: ${{ needs.target.result }}
+        run: test "$RESULT" = success
