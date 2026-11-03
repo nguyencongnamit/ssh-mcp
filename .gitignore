@@ -8,3 +8,4 @@
 *.db-wal
 *.db-shm
 /testbed/target/bootstrap-target.sh
+/testbed/bastion/authorized_keys

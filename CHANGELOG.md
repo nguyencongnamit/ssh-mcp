@@ -34,6 +34,11 @@ All notable changes are documented here. The format follows
   bursts, calls the target refused after the server allowed them, and admin
   actions, each linking to the console call trail. Off by default.
 
+- Jump-host transport (`transport: jump`) for fleets outside AWS or without
+  SSM: one bastion connection per call, TCP forwarding only, certificates
+  pinned to the bastion's address; sandbox mirrors use `ssh -W` through the
+  same bastion. Covered end to end by a bastion container in the test bed.
+
 ### Changed
 - `tools: ["*"]` in a policy now includes the two Docker tools; they return
   "not enabled" on hosts without the proxy.

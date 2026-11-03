@@ -119,6 +119,44 @@ PerSourcePenaltyExemptList 127.0.0.1/32,::1/128   # SSM transport
 The exemption covers only that address; every other source is still
 penalised.
 
+## Targets without SSM: jump host
+
+For fleets outside AWS, or without SSM, ssh-mcp can reach targets through an
+SSH bastion. The bastion account only forwards TCP to the targets' sshd; it
+never gets a shell. On the bastion:
+
+```
+# /etc/ssh/sshd_config.d/40-ssh-mcp-jump.conf
+Match User ssh-mcp-jump
+    AllowTcpForwarding local
+    PermitOpen 10.0.1.11:22 10.0.1.12:22   # the targets, nothing else
+    PermitTTY no
+    X11Forwarding no
+    AllowAgentForwarding no
+    AllowStreamLocalForwarding no
+    PermitTunnel no
+    ForceCommand /bin/false
+```
+
+On the server:
+
+```yaml
+transport:
+  jump:
+    address: bastion.internal:22
+    user: ssh-mcp-jump
+    key_file: /etc/ssh-mcp/jump_key            # 0600; its public key goes in the bastion account
+    known_hosts: /etc/ssh-mcp/jump_known_hosts # the bastion's host key
+    source_address: 10.0.0.5/32                # the bastion's address as targets see it
+```
+
+Hosts then use `transport: jump` and `address: <target>:22` in the inventory.
+Certificates for jump hosts are pinned to `source_address`, so they are
+useless from anywhere but the bastion. Each live call opens one bastion
+connection; sandbox mirrors reach the target through the same bastion with
+`ssh -W`. The test bed runs this path end to end through a real OpenSSH
+bastion container.
+
 ## Console
 
 Keep `console.listen` on `127.0.0.1` and reach it with SSM port forwarding:

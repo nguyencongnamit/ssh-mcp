@@ -28,6 +28,7 @@ type Dialer interface {
 type Auto struct {
 	SSM    *SSM
 	Direct *Direct
+	Jump   *Jump
 }
 
 // Dial implements Dialer.
@@ -38,6 +39,11 @@ func (a Auto) Dial(ctx context.Context, h inventory.Host) (net.Conn, error) {
 			return nil, errors.New("direct transport disabled")
 		}
 		return a.Direct.Dial(ctx, h)
+	case "jump":
+		if a.Jump == nil {
+			return nil, errors.New("jump transport not configured")
+		}
+		return a.Jump.Dial(ctx, h)
 	case "ssm", "":
 		if a.SSM == nil {
 			return nil, errors.New("ssm transport disabled")
@@ -201,11 +207,20 @@ func (t *tailBuffer) String() string {
 // on the instance connects to sshd from loopback.
 const LoopbackSource = "127.0.0.1/32,::1/128"
 
+// Sources are the certificate source-addresses per transport.
+type Sources struct {
+	Direct string // the server's address, for direct hosts
+	Jump   string // the bastion's address, for jump hosts
+}
+
 // SourceAddress returns the certificate source-address for a host: loopback
-// for SSM, the configured server address for direct SSH.
-func SourceAddress(h inventory.Host, direct string) string {
-	if h.Transport == "direct" {
-		return direct
+// for SSM, the server's address for direct SSH, the bastion's for jump.
+func SourceAddress(h inventory.Host, s Sources) string {
+	switch h.Transport {
+	case "direct":
+		return s.Direct
+	case "jump":
+		return s.Jump
 	}
 	return LoopbackSource
 }

@@ -20,8 +20,11 @@
 | `oidc.tenant_id` | Entra only: the token's `tid` must match |
 | `oidc.subject_claim`, `.groups_claim`, `.username_claim` | generic only: claim names, dotted for nested claims (defaults `sub`, `groups`, `preferred_username` then `email`) |
 | `inventory.static` | YAML host list (`id`, `name`, `transport`, `address`, `tags`) |
+| `oidc.issuer`, `oidc.audience`, `oidc.required_scope`, `oidc.tenant_id` | OIDC for people (Microsoft Entra ID today) |
+| `inventory.static` | YAML host list (`id`, `name`, `transport` = `ssm`\|`direct`\|`jump`, `address`, `tags`) |
 | `inventory.ec2[].region`, `.profile` | discover EC2 instances tagged `ssh-mcp=enabled` |
 | `transport.ssm`, `transport.direct` | enable transports |
+| `transport.jump.address`, `.user`, `.key_file`, `.known_hosts`, `.source_address` | reach `transport: jump` hosts through an SSH bastion. See [deployment](deployment.md#targets-without-ssm-jump-host) |
 | `sandbox.enabled`, `.prefixes`, `.max_concurrent`, `.cgroups` | free-form sandbox; `prefixes` must sit inside `paths.allow`; `cgroups: auto\|required\|off` |
 | `alerts.enabled`, `.slack_webhook_file`, `.teams_webhook_file`, `.console_url`, `.refusals`, `.window`, `.cooldown` | opt-in alerts to Slack and Teams (off by default). See [Alerts](#alerts) |
 | `console.listen`, `.user`, `.password_hash`, `.timezone` | admin console (`ssh-mcp console passwd` prints the hash) |

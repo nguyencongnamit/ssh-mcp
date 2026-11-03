@@ -48,11 +48,15 @@ func TestSSMHostKeyMatchesByInstanceID(t *testing.T) {
 }
 
 func TestSourceAddress(t *testing.T) {
-	if SourceAddress(inventory.Host{Transport: "ssm"}, "10.0.0.5/32") != LoopbackSource {
+	s := Sources{Direct: "10.0.0.5/32", Jump: "10.0.9.9/32"}
+	if SourceAddress(inventory.Host{Transport: "ssm"}, s) != LoopbackSource {
 		t.Fatal("ssm must use loopback")
 	}
-	if SourceAddress(inventory.Host{Transport: "direct"}, "10.0.0.5/32") != "10.0.0.5/32" {
-		t.Fatal("direct must use configured source")
+	if SourceAddress(inventory.Host{Transport: "direct"}, s) != "10.0.0.5/32" {
+		t.Fatal("direct must use the server's source")
+	}
+	if SourceAddress(inventory.Host{Transport: "jump"}, s) != "10.0.9.9/32" {
+		t.Fatal("jump must use the bastion's source")
 	}
 }
 

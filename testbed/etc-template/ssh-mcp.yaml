@@ -9,5 +9,11 @@ inventory:
 transport:
   direct: true
   ssm: false
+  jump:
+    address: bastion:22
+    user: ssh-mcp-jump
+    key_file: jump_key
+    known_hosts: jump_known_hosts
+    source_address: 10.247.71.10/32
 sandbox:
   enabled: true

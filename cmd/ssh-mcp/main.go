@@ -415,6 +415,11 @@ func serve(args []string) error {
 	if cfg.Transport.Direct {
 		dialer.Direct = &transport.Direct{Timeout: 10 * time.Second}
 	}
+	jumpSource := ""
+	if cfg.Transport.Jump != nil {
+		dialer.Jump = &transport.Jump{Config: *cfg.Transport.Jump, Timeout: 10 * time.Second}
+		jumpSource = cfg.Transport.Jump.SourceAddress
+	}
 
 	polRef := policy.NewHolder(pol)
 	reloader := &server.Reloader{Path: cfg.Policy, Holder: polRef, CA: authority, Store: st, Log: log}
@@ -422,7 +427,7 @@ func serve(args []string) error {
 		Store:     st,
 		PolicyRef: polRef,
 		Inventory: inv,
-		Live:      &live.Client{CA: authority, Dialer: dialer, HostKey: hostKeys, DirectSource: cfg.SourceAddress},
+		Live:      &live.Client{CA: authority, Dialer: dialer, HostKey: hostKeys, DirectSource: cfg.SourceAddress, JumpSource: jumpSource},
 		Redactor:  redact.Default(),
 		Log:       log,
 		Version:   version,
@@ -434,7 +439,7 @@ func serve(args []string) error {
 		m := &sandbox.Mirrors{
 			Root: cfg.DataDir + "/mirrors", StateDir: cfg.DataDir + "/mirror-keys",
 			Prefixes: cfg.Sandbox.Prefixes, KnownHosts: cfg.KnownHosts, CA: authority, Log: log,
-			DirectSource: cfg.SourceAddress, IdleTimeout: 10 * time.Minute,
+			DirectSource: cfg.SourceAddress, Jump: cfg.Transport.Jump, IdleTimeout: 10 * time.Minute,
 			Allowed: func(ctx context.Context) bool {
 				off, _, err := st.IsDisabled(ctx, store.GlobalKill)
 				return !off && err == nil
