@@ -23,6 +23,7 @@
 | `inventory.ec2[].region`, `.profile` | discover EC2 instances tagged `ssh-mcp=enabled` |
 | `transport.ssm`, `transport.direct` | enable transports |
 | `sandbox.enabled`, `.prefixes`, `.max_concurrent`, `.cgroups` | free-form sandbox; `prefixes` must sit inside `paths.allow`; `cgroups: auto\|required\|off` |
+| `alerts.enabled`, `.slack_webhook_file`, `.teams_webhook_file`, `.console_url`, `.refusals`, `.window`, `.cooldown` | opt-in alerts to Slack and Teams (off by default). See [Alerts](#alerts) |
 | `console.listen`, `.user`, `.password_hash`, `.timezone` | admin console (`ssh-mcp console passwd` prints the hash) |
 
 Full example: [`deploy/ssh-mcp.example.yaml`](../deploy/ssh-mcp.example.yaml).
@@ -145,3 +146,30 @@ oidc:
 None of these providers, Entra included, has yet been tested with live
 sign-ins. Each claim shape above is covered by unit tests that run a local
 issuer and sign real JWTs.
+## Alerts
+
+Off by default. When enabled, ssh-mcp watches its own audit log and posts to
+a Slack incoming webhook, a Microsoft Teams Workflows webhook, or both (same
+alerts to each):
+
+```yaml
+alerts:
+  enabled: true
+  slack_webhook_file: /etc/ssh-mcp/slack-webhook   # 0600, one https:// URL
+  teams_webhook_file: /etc/ssh-mcp/teams-webhook   # 0600, one https:// URL
+  console_url: https://localhost:8444              # links to the call trail
+  refusals: 5        # refusal burst threshold per identity ...
+  window: 10m        # ... within this window
+  cooldown: 30m      # at most one alert per rule and identity in this time
+```
+
+| Rule | Fires when |
+|---|---|
+| `refusal_burst` | one identity is refused `refusals` times within `window` |
+| `host_refusal` | the server allowed a call but the target's helper refused it: the host floor and the server policy disagree, or someone is probing for a bypass |
+| `admin_action` | kill switch, unkill, token create or revoke, from the console or the CLI |
+
+Rules are fixed and deterministic; no model is involved. The watcher reads
+the audit log after the fact, so a slow or failing webhook never delays a
+call. It starts after the newest record, so a restart does not replay old
+events.

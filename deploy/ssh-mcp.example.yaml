@@ -26,3 +26,8 @@ sandbox:
   prefixes: [/var/log/, /etc/]       # must sit inside policy paths.allow (checked at startup)
   max_concurrent: 4
   cgroups: required                   # auto | required | off
+# alerts:                            # opt-in; see docs/configuration.md#alerts
+#   enabled: true
+#   slack_webhook_file: /etc/ssh-mcp/slack-webhook
+#   teams_webhook_file: /etc/ssh-mcp/teams-webhook
+#   console_url: https://localhost:8444

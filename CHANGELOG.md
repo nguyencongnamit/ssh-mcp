@@ -30,10 +30,18 @@ All notable changes are documented here. The format follows
   each upstream request from validated values, and never returns labels,
   commands, environment or mounts. agent-ro never gets the Docker socket (#8).
 
+- Opt-in alerts to Slack and Microsoft Teams (same alerts to both): refusal
+  bursts, calls the target refused after the server allowed them, and admin
+  actions, each linking to the console call trail. Off by default.
+
 ### Changed
 - `tools: ["*"]` in a policy now includes the two Docker tools; they return
   "not enabled" on hosts without the proxy.
 - Architecture diagram is now a drawn SVG (light and dark) instead of Mermaid source.
+
+### Fixed
+- CLI `kill`, `unkill`, `token create` and `token revoke` now write audit
+  records (`cli:<user>`), as the console already did.
 
 ### Documentation
 - AppArmor profiles for Ubuntu servers (`deploy/apparmor/`), tested on real

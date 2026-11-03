@@ -28,6 +28,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"os/user"
 	"strings"
 	"syscall"
 	"time"
@@ -36,6 +37,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/auth"
 	"github.com/modelcontextprotocol/go-sdk/oauthex"
 
+	"github.com/nguyencongnamit/ssh-mcp/internal/alerts"
 	"github.com/nguyencongnamit/ssh-mcp/internal/authn"
 	"github.com/nguyencongnamit/ssh-mcp/internal/ca"
 	"github.com/nguyencongnamit/ssh-mcp/internal/config"
@@ -123,6 +125,9 @@ func run(args []string) error {
 			if err != nil {
 				return err
 			}
+			if err := cliAudit(st, "token_create", "bot:"+name, "owner "+owner+", ttl "+ttl.String()); err != nil {
+				return err
+			}
 			fmt.Println(tok)
 			fmt.Fprintln(os.Stderr, "Shown once. Store it in the bot's secret store; ssh-mcp keeps only a hash.")
 			return nil
@@ -148,7 +153,12 @@ func run(args []string) error {
 		if err != nil {
 			return err
 		}
-		return withStore(cfg, func(st *store.Store) error { return st.RevokeToken(context.Background(), name) })
+		return withStore(cfg, func(st *store.Store) error {
+			if err := st.RevokeToken(context.Background(), name); err != nil {
+				return err
+			}
+			return cliAudit(st, "token_revoke", "bot:"+name, "")
+		})
 	case "kill ", "unkill ":
 		var id, reason string
 		var all bool
@@ -179,9 +189,15 @@ func run(args []string) error {
 				if reason == "" {
 					return errors.New("-reason is required")
 				}
-				return st.Disable(context.Background(), key, reason)
+				if err := st.Disable(context.Background(), key, reason); err != nil {
+					return err
+				}
+				return cliAudit(st, "kill", key, reason)
 			}
-			return st.Enable(context.Background(), key)
+			if err := st.Enable(context.Background(), key); err != nil {
+				return err
+			}
+			return cliAudit(st, "unkill", key, "")
 		})
 	case "audit keygen":
 		fs := flag.NewFlagSet("audit keygen", flag.ExitOnError)
@@ -291,6 +307,21 @@ func withStore(cfg *config.Config, fn func(*store.Store) error) error {
 		return err
 	}
 	return fn(st)
+}
+
+// cliAudit records an admin action taken from the command line, the same
+// way the console records its own ("console:<user>").
+func cliAudit(st *store.Store, tool, target, reason string) error {
+	who := os.Getenv("SUDO_USER")
+	if who == "" {
+		if u, err := user.Current(); err == nil {
+			who = u.Username
+		}
+	}
+	_, err := st.Append(context.Background(), store.Record{
+		Identity: "cli:" + who, Tool: tool, Args: target, Decision: "admin", Reason: reason,
+	})
+	return err
 }
 
 func applyAuditKey(cfg *config.Config, st *store.Store) error {
@@ -441,6 +472,15 @@ func serve(args []string) error {
 			}
 		}
 		srv.Sandbox = runner
+	}
+
+	if cfg.Alerts.Enabled {
+		w, err := alerts.New(cfg.Alerts, st, log)
+		if err != nil {
+			return fmt.Errorf("alerts: %w", err)
+		}
+		go w.Run(ctx)
+		log.Info("alerts on", "sinks", len(w.Sinks))
 	}
 
 	// SIGHUP re-reads policy.yaml (systemctl reload ssh-mcp).
