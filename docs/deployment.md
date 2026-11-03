@@ -30,6 +30,29 @@
    `Delegate=pids memory` gives each sandbox its own cgroup; with
    `sandbox.cgroups: required` the server refuses to start without it.
 
+### CA key in AWS KMS
+
+Instead of `ca_key`, the CA can be an asymmetric KMS key, so the signing key
+never exists on the server's disk:
+
+```sh
+aws kms create-key --key-spec ECC_NIST_P256 --key-usage SIGN_VERIFY \
+  --description "ssh-mcp user CA"
+aws kms create-alias --alias-name alias/ssh-mcp-ca --target-key-id <key-id>
+```
+
+```yaml
+ca_kms:
+  key_id: alias/ssh-mcp-ca
+  region: <region>
+```
+
+Grant the server role `kms:GetPublicKey` and `kms:Sign` on that key only.
+`ssh-mcp ca pubkey -config ...` prints the `ecdsa-sha2-nistp256` public key
+for targets. Every certificate is one `kms:Sign` call through the AWS CLI, so
+each tool call costs one KMS round trip plus the CLI's start-up time. KMS
+signing quotas apply. It has not yet been measured against real KMS.
+
 ### AWS
 
 Attach [`deploy/iam-server-role.json`](../deploy/iam-server-role.json) to the

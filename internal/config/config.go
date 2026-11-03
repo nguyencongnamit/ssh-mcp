@@ -2,6 +2,7 @@
 package config
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/nguyencongnamit/ssh-mcp/internal/authn"
+	"github.com/nguyencongnamit/ssh-mcp/internal/ca"
 )
 
 // Config is the server configuration file.
@@ -24,6 +26,7 @@ type Config struct {
 	DataDir       string            `yaml:"data_dir"`
 	AuditKey      string            `yaml:"audit_key"`
 	CAKey         string            `yaml:"ca_key"`
+	CAKMS         *ca.KMSConfig     `yaml:"ca_kms"`
 	SourceAddress string            `yaml:"source_address"`
 	HelperPath    string            `yaml:"helper_path"`
 	KnownHosts    string            `yaml:"known_hosts"`
@@ -87,8 +90,11 @@ func Load(path string) (*Config, error) {
 	if c.DataDir == "" {
 		return nil, errors.New("data_dir is required")
 	}
-	if c.CAKey == "" || c.KnownHosts == "" || c.Policy == "" {
-		return nil, errors.New("ca_key, known_hosts and policy are required")
+	if (c.CAKey == "") == (c.CAKMS == nil) {
+		return nil, errors.New("set exactly one of ca_key and ca_kms")
+	}
+	if c.KnownHosts == "" || c.Policy == "" {
+		return nil, errors.New("known_hosts and policy are required")
 	}
 	if c.Inventory.Static == "" && len(c.Inventory.EC2) == 0 {
 		return nil, errors.New("inventory needs static and/or ec2")
@@ -117,3 +123,12 @@ func Load(path string) (*Config, error) {
 
 // DBPath is the SQLite file.
 func (c *Config) DBPath() string { return filepath.Join(c.DataDir, "ssh-mcp.db") }
+
+// LoadCA opens the configured certificate authority: a key file, or an AWS
+// KMS key.
+func (c *Config) LoadCA(ctx context.Context) (*ca.CA, error) {
+	if c.CAKMS != nil {
+		return ca.NewKMS(ctx, *c.CAKMS)
+	}
+	return ca.LoadFile(c.CAKey)
+}
