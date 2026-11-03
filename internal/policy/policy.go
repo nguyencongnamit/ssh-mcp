@@ -22,11 +22,23 @@ import (
 
 // Who selects callers. Exactly one field must be set.
 type Who struct {
+	// Group matches a value in the caller's groups (generic OIDC groups
+	// claim, or Entra group object IDs and app roles).
+	Group string `yaml:"group,omitempty"`
+	// EntraGroup is the same as Group, kept for Entra configurations.
 	EntraGroup string `yaml:"entra_group,omitempty"`
-	// User is an Entra object ID (oid). Names and emails are mutable and
-	// are rejected.
+	// User is the immutable subject: an Entra object ID (oid) or the OIDC
+	// subject claim. Names and emails are mutable and are rejected.
 	User  string `yaml:"user,omitempty"`
 	Token string `yaml:"token,omitempty"`
+}
+
+// GroupSelector returns the group selector, whichever spelling was used.
+func (w Who) GroupSelector() string {
+	if w.Group != "" {
+		return w.Group
+	}
+	return w.EntraGroup
 }
 
 // Hosts selects targets: every listed tag must match one of its values.
@@ -86,13 +98,13 @@ func Parse(b []byte, knownTools []string) (*Policy, error) {
 			label = fmt.Sprintf("rule %d", i)
 		}
 		n := 0
-		for _, s := range []string{r.Who.EntraGroup, r.Who.User, r.Who.Token} {
+		for _, s := range []string{r.Who.Group, r.Who.EntraGroup, r.Who.User, r.Who.Token} {
 			if s != "" {
 				n++
 			}
 		}
 		if n != 1 {
-			return nil, fmt.Errorf("policy %s: who must set exactly one of entra_group, user, token", label)
+			return nil, fmt.Errorf("policy %s: who must set exactly one of group, entra_group, user, token", label)
 		}
 		if r.Who.User != "" {
 			k, err := identity.NormalizeKey(identity.KindUser + ":" + r.Who.User)
@@ -150,12 +162,12 @@ func (w Who) matches(id identity.Identity) bool {
 		return id.Kind == identity.KindBot && id.Name == w.Token
 	case w.User != "":
 		return id.Kind == identity.KindUser && id.Name == w.User
-	case w.EntraGroup != "":
+	case w.GroupSelector() != "":
 		if id.Kind != identity.KindUser {
 			return false
 		}
 		for _, g := range id.Groups {
-			if g == w.EntraGroup {
+			if g == w.GroupSelector() {
 				return true
 			}
 		}
@@ -252,8 +264,8 @@ func (p *Policy) RulesForHost(host inventory.Host) []string {
 		}
 		who := r.Who.Token
 		switch {
-		case r.Who.EntraGroup != "":
-			who = "group " + r.Who.EntraGroup
+		case r.Who.GroupSelector() != "":
+			who = "group " + r.Who.GroupSelector()
 		case r.Who.User != "":
 			who = "user " + r.Who.User
 		default:

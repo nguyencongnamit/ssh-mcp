@@ -6,7 +6,7 @@
 <section class="card rulecard">
   <div class="rulename"><span class="label">rule</span><b>{{.Name}}</b>{{if .Rate}}<span class="chip">{{.Rate}}</span>{{else}}<span class="chip muted">120/min</span>{{end}}</div>
   <div class="flow">
-    <div class="fbox"><span class="label">Who</span><b>{{if .Who.EntraGroup}}Entra group{{else if .Who.User}}User{{else}}Bot{{end}}</b><code>{{if .Who.EntraGroup}}{{.Who.EntraGroup}}{{else if .Who.User}}{{.Who.User}}{{else}}{{.Who.Token}}{{end}}</code></div>
+    <div class="fbox"><span class="label">Who</span><b>{{if .Who.GroupSelector}}Group{{else if .Who.User}}User{{else}}Bot{{end}}</b><code>{{if .Who.GroupSelector}}{{.Who.GroupSelector}}{{else if .Who.User}}{{.Who.User}}{{else}}{{.Who.Token}}{{end}}</code></div>
     <svg class="farrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
     <div class="fbox"><span class="label">May use</span><div class="chips">{{range .Tools}}<span class="chip">{{if eq . "*"}}every tool{{else}}{{.}}{{end}}</span>{{end}}</div></div>
     <svg class="farrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>

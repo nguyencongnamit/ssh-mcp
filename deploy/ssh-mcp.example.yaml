@@ -10,7 +10,7 @@ ca_key: /etc/ssh-mcp/ca_key          # 0600, owned by the ssh-mcp user
 source_address: <private-ip>/32      # direct-transport hosts only; SSM hosts always get loopback
 known_hosts: /etc/ssh-mcp/known_hosts # "<instance-id> ssh-ed25519 AAAA..." per host, or @cert-authority
 policy: /etc/ssh-mcp/policy.yaml
-oidc:
+oidc:                                # Entra shown; Okta/Keycloak/Google/Auth0: docs/configuration.md
   issuer: https://login.microsoftonline.com/<tenant-id>/v2.0
   audience: api://<ssh-mcp-app-id>
   required_scope: ssh-mcp.read

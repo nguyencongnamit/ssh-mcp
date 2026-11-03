@@ -112,20 +112,48 @@ func TestPathsMergeDefaultDeny(t *testing.T) {
 
 func TestParseRejects(t *testing.T) {
 	bad := map[string]string{
-		"two whos":      "rules:\n- who: {entra_group: a, token: b}\n  hosts: {all: true}\n  tools: [ps]\n",
-		"no who":        "rules:\n- who: {}\n  hosts: {all: true}\n  tools: [ps]\n",
-		"no hosts":      "rules:\n- who: {token: b}\n  hosts: {}\n  tools: [ps]\n",
-		"all and tags":  "rules:\n- who: {token: b}\n  hosts: {all: true, tags: {env: [x]}}\n  tools: [ps]\n",
-		"empty tag":     "rules:\n- who: {token: b}\n  hosts: {tags: {env: []}}\n  tools: [ps]\n",
-		"unknown tool":  "rules:\n- who: {token: b}\n  hosts: {all: true}\n  tools: [shell]\n",
-		"no tools":      "rules:\n- who: {token: b}\n  hosts: {all: true}\n  tools: []\n",
-		"bad rate":      "rules:\n- who: {token: b}\n  hosts: {all: true}\n  tools: [ps]\n  rate: fast\n",
-		"typo field":    "rules:\n- who: {token: b}\n  host: {all: true}\n  tools: [ps]\n",
-		"user by email": "rules:\n- who: {user: a@example.test}\n  hosts: {all: true}\n  tools: [ps]\n",
+		"two whos":             "rules:\n- who: {entra_group: a, token: b}\n  hosts: {all: true}\n  tools: [ps]\n",
+		"no who":               "rules:\n- who: {}\n  hosts: {all: true}\n  tools: [ps]\n",
+		"no hosts":             "rules:\n- who: {token: b}\n  hosts: {}\n  tools: [ps]\n",
+		"all and tags":         "rules:\n- who: {token: b}\n  hosts: {all: true, tags: {env: [x]}}\n  tools: [ps]\n",
+		"empty tag":            "rules:\n- who: {token: b}\n  hosts: {tags: {env: []}}\n  tools: [ps]\n",
+		"unknown tool":         "rules:\n- who: {token: b}\n  hosts: {all: true}\n  tools: [shell]\n",
+		"no tools":             "rules:\n- who: {token: b}\n  hosts: {all: true}\n  tools: []\n",
+		"bad rate":             "rules:\n- who: {token: b}\n  hosts: {all: true}\n  tools: [ps]\n  rate: fast\n",
+		"typo field":           "rules:\n- who: {token: b}\n  host: {all: true}\n  tools: [ps]\n",
+		"user by email":        "rules:\n- who: {user: a@example.test}\n  hosts: {all: true}\n  tools: [ps]\n",
+		"both group spellings": "rules:\n- who: {group: a, entra_group: a}\n  hosts: {all: true}\n  tools: [ps]\n",
 	}
 	for name, y := range bad {
 		if _, err := Parse([]byte(y), tools); err == nil {
 			t.Errorf("%s: expected error", name)
+		}
+	}
+}
+
+func TestGenericGroupAndSubject(t *testing.T) {
+	y := "rules:\n" +
+		"- who: {group: sre}\n  hosts: {all: true}\n  tools: [ps]\n" +
+		"- who: {user: 00uAbC123xyz}\n  hosts: {all: true}\n  tools: [journal]\n"
+	p, err := Parse([]byte(y), tools)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sre := identity.Identity{Kind: identity.KindUser, Name: "u1", Groups: []string{"sre"}}
+	okta := identity.Identity{Kind: identity.KindUser, Name: "00uAbC123xyz"}
+	oktaCase := identity.Identity{Kind: identity.KindUser, Name: "00uabc123xyz"}
+	bot := identity.Identity{Kind: identity.KindBot, Name: "sre", Groups: []string{"sre"}}
+	for _, c := range []struct {
+		id    identity.Identity
+		tool  string
+		allow bool
+	}{
+		{sre, "ps", true}, {sre, "journal", false},
+		{okta, "journal", true}, {oktaCase, "journal", false}, // subjects are case-sensitive
+		{bot, "ps", false}, // groups never apply to bots
+	} {
+		if got := p.Check(c.id, staging, c.tool).Allow; got != c.allow {
+			t.Errorf("%s %s: allowed=%v, want %v", c.id.Key(), c.tool, got, c.allow)
 		}
 	}
 }

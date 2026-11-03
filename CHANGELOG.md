@@ -11,6 +11,12 @@ All notable changes are documented here. The format follows
   24.04 and 26.04, Debian 12 and Amazon Linux 2023 targets (#7).
 - Go fuzz tests for request decoding, the path policy and the certificate
   path-policy check, run in CI on every pull request (#10).
+- Generic OIDC sign-in (`oidc.provider: generic`) for Okta, Keycloak, Google,
+  Auth0 and other issuers, with configurable subject, groups and username
+  claims (dotted names for nested claims); scopes read from `scp` or `scope`
+  (#9).
+- Provider-neutral `who: { group: ... }` in policy; `entra_group` remains an
+  alias. User subjects other than Entra object IDs are accepted (case-sensitive).
 
 ### Changed
 - Architecture diagram is now a drawn SVG (light and dark) instead of Mermaid source.
