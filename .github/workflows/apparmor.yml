@@ -1,0 +1,91 @@
+name: AppArmor
+
+# Proves the profiles in deploy/apparmor/ on a real Ubuntu 24.04 host with
+# AppArmor enforcing and the user-namespace restriction left ON. Each check
+# runs once before the profile is loaded (must fail) and once after (must
+# succeed), so the job fails if the profile does nothing or is not needed.
+on:
+  push:
+    branches: [main]
+    paths: [deploy/apparmor/**, .github/workflows/apparmor.yml]
+  pull_request:
+    branches: [main]
+    paths: [deploy/apparmor/**, .github/workflows/apparmor.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  profiles:
+    name: Profiles on Ubuntu 24.04
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - name: Packages and a service user
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq bubblewrap sshfs openssh-server apparmor-utils >/dev/null
+          sudo useradd --system --create-home --home-dir /var/lib/ssh-mcp --shell /bin/sh ssh-mcp
+          sudo install -d -o ssh-mcp -g ssh-mcp /var/lib/ssh-mcp/mirrors/web-1/etc
+          # Stand-in for the server binary at the profile's path: it only
+          # execs its arguments, as ssh-mcp execs bwrap.
+          sudo install -m 0755 /usr/bin/env /usr/local/bin/ssh-mcp
+          echo "userns restriction: $(sysctl -n kernel.apparmor_restrict_unprivileged_userns)"
+          test "$(sysctl -n kernel.apparmor_restrict_unprivileged_userns)" = 1
+          sudo aa-status --enabled
+      - name: sshd on localhost for the mirror
+        run: |
+          sudo -u ssh-mcp ssh-keygen -q -t ed25519 -N '' -f /var/lib/ssh-mcp/id
+          sudo install -d -o ssh-mcp -m 0700 /var/lib/ssh-mcp/.ssh
+          sudo install -o ssh-mcp -m 0600 /var/lib/ssh-mcp/id.pub /var/lib/ssh-mcp/.ssh/authorized_keys
+          sudo systemctl start ssh
+          ssh-keyscan -t ed25519 127.0.0.1 2>/dev/null | sudo -u ssh-mcp tee /var/lib/ssh-mcp/known_hosts >/dev/null
+      - name: Define checks
+        run: |
+          cat > /tmp/checks.sh <<'SH'
+          bwrap_check() {
+            sudo -u ssh-mcp /usr/local/bin/ssh-mcp bwrap --unshare-all --ro-bind / / --proc /proc --dev /dev true
+          }
+          mount_check() {
+            mnt=/var/lib/ssh-mcp/mirrors/web-1/etc
+            sudo -u ssh-mcp sshfs -o ro,IdentityFile=/var/lib/ssh-mcp/id,UserKnownHostsFile=/var/lib/ssh-mcp/known_hosts,BatchMode=yes \
+              ssh-mcp@127.0.0.1:/etc "$mnt" || return 1
+            sudo -u ssh-mcp test -r "$mnt/hostname"; rc=$?
+            sudo -u ssh-mcp fusermount3 -u "$mnt" || rc=1
+            return $rc
+          }
+          SH
+      - name: Without the profiles, both are refused
+        run: |
+          . /tmp/checks.sh
+          if bwrap_check; then echo "::error::bwrap worked without the profile; the check proves nothing"; exit 1; fi
+          if mount_check; then echo "::error::sshfs mounted without the override; the check proves nothing"; exit 1; fi
+      - name: Load the profiles
+        run: |
+          sudo install -m 0644 deploy/apparmor/ssh-mcp /etc/apparmor.d/ssh-mcp
+          sudo apparmor_parser -r /etc/apparmor.d/ssh-mcp
+          sudo install -m 0644 deploy/apparmor/fusermount3.local /etc/apparmor.d/local/fusermount3
+          sudo apparmor_parser -r /etc/apparmor.d/fusermount3
+          sudo aa-status | grep -E 'ssh-mcp|fusermount3'
+      - name: With the profiles, both work and the restriction still holds elsewhere
+        run: |
+          . /tmp/checks.sh
+          bwrap_check
+          mount_check
+          # Same bwrap from outside the ssh-mcp profile is still refused.
+          if sudo -u ssh-mcp bwrap --unshare-all --ro-bind / / true; then
+            echo "::error::bwrap works outside the ssh-mcp profile; the restriction is not holding"; exit 1
+          fi
+          # A mount point outside data_dir is still refused.
+          sudo install -d -o ssh-mcp /srv/elsewhere
+          if sudo -u ssh-mcp sshfs -o ro,IdentityFile=/var/lib/ssh-mcp/id,UserKnownHostsFile=/var/lib/ssh-mcp/known_hosts,BatchMode=yes \
+               ssh-mcp@127.0.0.1:/etc /srv/elsewhere; then
+            sudo -u ssh-mcp fusermount3 -u /srv/elsewhere
+            echo "::error::sshfs mounted outside data_dir"; exit 1
+          fi
+      - name: Kernel log on failure
+        if: failure()
+        run: sudo dmesg | grep -i apparmor | tail -40
