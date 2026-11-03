@@ -6,6 +6,9 @@ All notable changes are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- Architecture diagram is now a drawn SVG (light and dark) instead of Mermaid source.
+
 ## [0.1.0] - 2026-11-03
 
 First public preview.

@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="660" viewBox="0 0 1280 660" role="img" aria-label="ssh-mcp architecture: agents call the ssh-mcp server, which checks identity and policy, then runs typed tools on the target through a forced helper, or free-form search in a no-network sandbox over a read-only mirror. Output is redacted and every call is audited.">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#4d8bff"/></marker><marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#94a3b8"/></marker></defs>
+<rect x="0.5" y="0.5" width="1279" height="659" rx="16" fill="#0b1220" stroke="#1e293b"/>
+<text x="32" y="40" font-family="'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18" font-weight="700" fill="#f8fafc">ssh-mcp · architecture</text>
+<line x1="880" y1="34" x2="914" y2="34" stroke="#4d8bff" stroke-width="2" marker-end="url(#ah)"/>
+<text x="924" y="39" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="13" fill="#94a3b8">request</text>
+<line x1="1000" y1="34" x2="1034" y2="34" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#ao)"/>
+<text x="1044" y="39" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="13" fill="#94a3b8">output / record</text>
+<rect x="24" y="64" width="224" height="572" rx="14" fill="#0f172a" stroke="#334155"/>
+<text x="42" y="92" font-family="'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" font-weight="700" letter-spacing="1.5" fill="#94a3b8">CALLERS</text>
+<rect x="276" y="64" width="660" height="572" rx="14" fill="#0f172a" stroke="#334155"/>
+<text x="294" y="92" font-family="'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" font-weight="700" letter-spacing="1.5" fill="#94a3b8">SSH-MCP SERVER</text>
+<rect x="964" y="64" width="292" height="572" rx="14" fill="#0f172a" stroke="#334155"/>
+<text x="982" y="92" font-family="'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" font-weight="700" letter-spacing="1.5" fill="#94a3b8">EACH LINUX TARGET</text>
+<rect x="40" y="122" width="192" height="72" rx="10" fill="#111a2e" stroke="#334155" stroke-width="1"/>
+<text x="136.0" y="154" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="14" font-weight="650" fill="#e2e8f0">Claude Code / Desktop</text>
+<text x="136.0" y="176" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#94a3b8">people · OIDC</text>
+<rect x="40" y="222" width="192" height="72" rx="10" fill="#111a2e" stroke="#334155" stroke-width="1"/>
+<text x="136.0" y="254" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="14" font-weight="650" fill="#e2e8f0">Bots &amp; CI agents</text>
+<text x="136.0" y="276" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#94a3b8">scoped bot tokens</text>
+<rect x="40" y="548" width="192" height="72" rx="10" fill="#111a2e" stroke="#334155" stroke-width="1"/>
+<text x="136.0" y="580" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="14" font-weight="650" fill="#e2e8f0">Admin console</text>
+<text x="136.0" y="602" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#94a3b8">review · stop · revoke</text>
+<rect x="300" y="122" width="180" height="72" rx="10" fill="#111a2e" stroke="#334155" stroke-width="1"/>
+<text x="390.0" y="154" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="15" font-weight="650" fill="#e2e8f0">Authenticate</text>
+<text x="390.0" y="176" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#94a3b8">OIDC · hashed tokens</text>
+<rect x="300" y="222" width="180" height="72" rx="10" fill="#111a2e" stroke="#334155" stroke-width="1"/>
+<text x="390.0" y="254" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="15" font-weight="650" fill="#e2e8f0">Kill switch</text>
+<text x="390.0" y="276" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#94a3b8">per identity or all</text>
+<rect x="300" y="322" width="180" height="72" rx="10" fill="#132544" stroke="#4d8bff" stroke-width="1.5"/>
+<text x="390.0" y="354" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="15" font-weight="650" fill="#e2e8f0">Policy</text>
+<text x="390.0" y="376" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#94a3b8">who × host tags × tool</text>
+<path d="M390 194 L390 222" fill="none" stroke="#4d8bff" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M390 294 L390 322" fill="none" stroke="#4d8bff" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah)"/>
+<text x="548" y="114" font-family="'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" font-weight="700" letter-spacing="1.2" fill="#4d8bff">LIVE PATH · TYPED TOOLS</text>
+<rect x="548" y="122" width="364" height="100" rx="10" fill="#111a2e" stroke="#334155" stroke-width="1"/>
+<text x="730.0" y="160" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="15" font-weight="650" fill="#e2e8f0">Per-call SSH certificate</text>
+<text x="730.0" y="182" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#94a3b8">5-minute TTL · forced command · no pty or forwarding</text>
+<text x="730.0" y="198" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#94a3b8">path policy signed into the certificate</text>
+<text x="600" y="306" font-family="'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" font-weight="700" letter-spacing="1.2" fill="#4d8bff">SANDBOX PATH · FREE-FORM SEARCH</text>
+<rect x="600" y="314" width="160" height="86" rx="10" fill="#111a2e" stroke="#334155" stroke-width="1"/>
+<text x="680.0" y="344" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="14" font-weight="650" fill="#e2e8f0">bubblewrap</text>
+<text x="680.0" y="366" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#94a3b8">no network · no caps</text>
+<text x="680.0" y="383" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#94a3b8">pids + memory capped</text>
+<rect x="784" y="314" width="128" height="86" rx="10" fill="#111a2e" stroke="#334155" stroke-width="1"/>
+<text x="848.0" y="352" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="14" font-weight="650" fill="#e2e8f0">sshfs mirror</text>
+<text x="848.0" y="374" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#94a3b8">read-only</text>
+<path d="M480 357 L600 357" fill="none" stroke="#4d8bff" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M520 357 L520 172 L548 172" fill="none" stroke="#4d8bff" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M760 357 L784 357" fill="none" stroke="#4d8bff" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah)"/>
+<rect x="300" y="452" width="612" height="64" rx="10" fill="#111a2e" stroke="#334155" stroke-width="1"/>
+<text x="606.0" y="480" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="15" font-weight="650" fill="#e2e8f0">Output pipeline</text>
+<text x="606.0" y="502" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#94a3b8">size cap  →  secret redaction  →  untrusted-data fence</text>
+<rect x="300" y="548" width="612" height="72" rx="10" fill="#111a2e" stroke="#334155" stroke-width="1"/>
+<text x="606.0" y="572" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="15" font-weight="650" fill="#e2e8f0">Audit log</text>
+<text x="606.0" y="594" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#94a3b8">every decision and result · hash-chained · append-only · HMAC-keyed</text>
+<text x="606.0" y="610" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#94a3b8">output itself is never stored</text>
+<path d="M572 222 L572 452" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round" marker-end="url(#ao)"/>
+<path d="M680 400 L680 452" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round" marker-end="url(#ao)"/>
+<path d="M606 516 L606 548" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round" marker-end="url(#ao)"/>
+<path d="M300 484 L136 484 L136 294" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round" marker-end="url(#ao)"/>
+<text x="144" y="476" text-anchor="start" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="600" fill="#94a3b8">redacted results</text>
+<path d="M300 584 L232 584" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round" marker-end="url(#ao)"/>
+<path d="M232 146 L300 146" fill="none" stroke="#4d8bff" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M232 258 L262 258 L262 180 L300 180" fill="none" stroke="#4d8bff" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah)"/>
+<text x="42" y="110" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="600" fill="#94a3b8">connect over MCP · HTTPS</text>
+<rect x="980" y="122" width="260" height="100" rx="10" fill="#111a2e" stroke="#334155" stroke-width="1"/>
+<text x="1110.0" y="159" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="14" font-weight="650" fill="#e2e8f0">agent-ro → ssh-mcp-helper</text>
+<text x="1110.0" y="181" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#94a3b8">fixed argv per tool · no shell</text>
+<text x="1110.0" y="198" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#94a3b8">symlink-safe reads · refuses root</text>
+<rect x="980" y="314" width="260" height="86" rx="10" fill="#111a2e" stroke="#334155" stroke-width="1"/>
+<text x="1110.0" y="344" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="14" font-weight="650" fill="#e2e8f0">agent-sftp → helper --sftp</text>
+<text x="1110.0" y="366" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#94a3b8">read-only SFTP</text>
+<text x="1110.0" y="383" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#94a3b8">denied paths do not exist</text>
+<path d="M912 172 L980 172" fill="none" stroke="#4d8bff" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M912 357 L980 357" fill="none" stroke="#4d8bff" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah)"/>
+<text x="982" y="112" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="600" fill="#94a3b8">SSH over SSM or direct</text>
+<text x="982" y="304" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="600" fill="#94a3b8">SFTP over the same transport</text>
+<rect x="980" y="440" width="260" height="180" rx="10" fill="#111a2e" stroke="#334155" stroke-dasharray="4 4"/>
+<text x="998" y="470" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="14" font-weight="650" fill="#e2e8f0">Enforced by Linux + sshd</text>
+<circle cx="1003" cy="494" r="3" fill="#4d8bff"/>
+<text x="1014" y="498" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#94a3b8">non-root, no sudo, no password</text>
+<circle cx="1003" cy="518" r="3" fill="#4d8bff"/>
+<text x="1014" y="522" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#94a3b8">helper forced for both users</text>
+<circle cx="1003" cy="542" r="3" fill="#4d8bff"/>
+<text x="1014" y="546" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#94a3b8">certificates from this CA only</text>
+<circle cx="1003" cy="566" r="3" fill="#4d8bff"/>
+<text x="1014" y="570" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#94a3b8">no pty · no forwarding · no agent</text>
+<circle cx="1003" cy="590" r="3" fill="#4d8bff"/>
+<text x="1014" y="594" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#94a3b8">port 22 can stay closed (SSM)</text>
+</svg>
