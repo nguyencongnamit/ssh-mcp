@@ -3,8 +3,10 @@ name: AppArmor
 # Proves the profiles in deploy/apparmor/ on real Ubuntu hosts with AppArmor
 # enforcing and the user-namespace restriction left ON. Each check runs once
 # before the profile is loaded (must fail) and once after (must succeed), so
-# the job fails if a profile does nothing or is not needed. Ubuntu 24.04 has
-# the user-namespace restriction; 26.04 also confines fusermount3.
+# the job fails if a profile does nothing or is not needed. Ubuntu 24.04
+# restricts user namespaces (bubblewrap needs deploy/apparmor/ssh-mcp);
+# 26.04 ships its own bwrap profile but confines fusermount3 (needs
+# deploy/apparmor/fusermount3.local).
 on:
   push:
     branches: [main]
@@ -81,7 +83,11 @@ jobs:
       - name: Without the profiles, both are refused
         run: |
           . /tmp/checks.sh
-          if bwrap_check; then echo "::error::bwrap worked without the profile; the check proves nothing"; exit 1; fi
+          if [ "$USERNS_CONFINED" = 1 ]; then
+            if bwrap_check; then echo "::error::bwrap worked without the profile; the check proves nothing"; exit 1; fi
+          else
+            bwrap_check   # release ships its own bwrap profile (bwrap-userns-restrict)
+          fi
           if [ "$FUSE_CONFINED" = 1 ]; then
             if mount_check; then echo "::error::sshfs mounted without the override; the check proves nothing"; exit 1; fi
           else
@@ -101,8 +107,9 @@ jobs:
           . /tmp/checks.sh
           bwrap_check
           mount_check
-          # Same bwrap from outside the ssh-mcp profile is still refused.
-          if sudo -u ssh-mcp bwrap --unshare-all --ro-bind / / true; then
+          # Same bwrap from outside the ssh-mcp profile is still refused
+          # (on releases without their own bwrap profile).
+          if [ "$USERNS_CONFINED" = 1 ] && sudo -u ssh-mcp bwrap --unshare-all --ro-bind / / true; then
             echo "::error::bwrap works outside the ssh-mcp profile; the restriction is not holding"; exit 1
           fi
           # A mount point outside data_dir is still refused where confined.

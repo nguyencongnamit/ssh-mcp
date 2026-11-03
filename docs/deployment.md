@@ -5,13 +5,19 @@
 1. Run it in a private subnet with no inbound internet. Linux with cgroup v2.
 2. Install: `ssh-mcp` binary, AWS CLI + `session-manager-plugin` (SSM
    transport), `bwrap`, `sshfs` / `fusermount3`, `prlimit`.
-   On **Ubuntu 24.04+** two AppArmor defaults block the sandbox: the
-   restriction on unprivileged user namespaces (bubblewrap) and the
-   `fusermount3` profile (sshfs mirror mounts under `data_dir`). Either add an
-   AppArmor profile for the ssh-mcp service that allows `userns` and the mount,
-   or set `kernel.apparmor_restrict_unprivileged_userns=0` and adjust the
-   `fusermount3` profile. The live tools are unaffected; only `sandbox_exec`
-   needs this.
+   **Ubuntu AppArmor.** The live tools need nothing. `sandbox_exec` does:
+
+   | Release | Blocks | Fix |
+   |---|---|---|
+   | 24.04 | unprivileged user namespaces (bubblewrap) | load [`deploy/apparmor/ssh-mcp`](../deploy/apparmor/ssh-mcp) |
+   | 26.04 | fusermount3 mount points (sshfs mirrors under `data_dir`) | add [`deploy/apparmor/fusermount3.local`](../deploy/apparmor/fusermount3.local) as `/etc/apparmor.d/local/fusermount3` |
+
+   Both keep the system-wide restrictions on for everything else; each file
+   has its install commands at the top. 26.04 already ships a bwrap profile,
+   so the first file is not needed there. CI loads both on real 24.04 and
+   26.04 hosts and checks that each is refused without its profile and works
+   with it (`.github/workflows/apparmor.yml`). Avoid turning
+   `kernel.apparmor_restrict_unprivileged_userns` off host-wide.
 3. Keys:
    ```sh
    ssh-mcp ca init -key /etc/ssh-mcp/ca_key
