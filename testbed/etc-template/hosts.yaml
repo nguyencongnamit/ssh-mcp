@@ -9,3 +9,8 @@ hosts:
     transport: direct
     address: target:22
     tags: { env: prod }
+  - id: web-2
+    name: web-2
+    transport: jump
+    address: target:22
+    tags: { env: staging, team: platform }

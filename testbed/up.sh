@@ -18,13 +18,22 @@ printf 'console:\n  listen: 0.0.0.0:8444\n  user: admin\n  timezone: UTC\n  pass
 echo "==> creating test CA"
 go run ../cmd/ssh-mcp ca init -key server/etc/ca_key > target/ssh-mcp-ca.pub
 
+echo "==> creating jump-host key"
+ssh-keygen -q -t ed25519 -N '' -C ssh-mcp-jump -f server/etc/jump_key
+cp server/etc/jump_key.pub bastion/authorized_keys && rm server/etc/jump_key.pub
+
 echo "==> resetting this project's containers and volume"
 docker compose down -v --remove-orphans >/dev/null 2>&1 || true
 
 echo "==> building target"
 docker compose build target
 HOSTKEY=$(docker compose run --rm --no-deps target cat /etc/ssh/ssh_host_ed25519_key.pub | awk '{print $1" "$2}')
-{ echo "web-1 $HOSTKEY"; echo "db-1 $HOSTKEY"; } > server/etc/known_hosts
+{ echo "web-1 $HOSTKEY"; echo "db-1 $HOSTKEY"; echo "web-2 $HOSTKEY"; } > server/etc/known_hosts
+
+echo "==> building bastion"
+docker compose build bastion
+JUMPKEY=$(docker compose run --rm --no-deps bastion cat /etc/ssh/ssh_host_ed25519_key.pub | awk '{print $1" "$2}')
+echo "bastion $JUMPKEY" > server/etc/jump_known_hosts
 
 echo "==> building server and starting"
 docker compose build server

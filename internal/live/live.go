@@ -38,6 +38,8 @@ type Client struct {
 	// DirectSource is the certificate source-address for direct-transport
 	// hosts (the server's private IP). SSM hosts always get loopback.
 	DirectSource string
+	// JumpSource is the bastion's address, for jump-transport hosts.
+	JumpSource string
 }
 
 // HostKeysFromFile builds a host-key callback from an OpenSSH known_hosts
@@ -73,7 +75,7 @@ func (c *Client) Exec(ctx context.Context, host inventory.Host, keyID string, re
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	eph, err := c.CA.IssueLive(keyID, transport.SourceAddress(host, c.DirectSource))
+	eph, err := c.CA.IssueLive(keyID, transport.SourceAddress(host, transport.Sources{Direct: c.DirectSource, Jump: c.JumpSource}))
 	if err != nil {
 		return nil, fmt.Errorf("issue certificate: %w", err)
 	}

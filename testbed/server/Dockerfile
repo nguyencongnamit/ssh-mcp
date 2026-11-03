@@ -9,7 +9,7 @@ COPY ssh-mcp /usr/local/bin/ssh-mcp
 # Config and CA key are baked in by up.sh (bind mounts on Docker Desktop do
 # not preserve the 0600 ownership the CA loader insists on).
 COPY etc/ /etc/ssh-mcp/
-RUN chown -R ssh-mcp:ssh-mcp /etc/ssh-mcp && chmod 0600 /etc/ssh-mcp/ca_key /etc/ssh-mcp/audit.key
+RUN chown -R ssh-mcp:ssh-mcp /etc/ssh-mcp && chmod 0600 /etc/ssh-mcp/ca_key /etc/ssh-mcp/audit.key /etc/ssh-mcp/jump_key
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 WORKDIR /var/lib/ssh-mcp
 # Starts as root only to delegate the cgroup, then drops to ssh-mcp.

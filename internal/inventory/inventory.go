@@ -29,9 +29,9 @@ type Host struct {
 	ID   string            `yaml:"id" json:"id"`
 	Name string            `yaml:"name" json:"name"`
 	Tags map[string]string `yaml:"tags" json:"tags"`
-	// Transport is "ssm" (default for EC2) or "direct".
+	// Transport is "ssm" (default for EC2), "direct" or "jump".
 	Transport string `yaml:"transport" json:"transport"`
-	// Address is host:port for the direct transport.
+	// Address is host:port for the direct and jump transports.
 	Address string `yaml:"address,omitempty" json:"-"`
 	Region  string `yaml:"region,omitempty" json:"region,omitempty"`
 	// Profile/RoleARN select AWS credentials for multi-account setups.
@@ -72,8 +72,14 @@ func LoadStatic(path string) (*Static, error) {
 		if h.Transport == "" {
 			doc.Hosts[i].Transport = "ssm"
 		}
-		if doc.Hosts[i].Transport == "direct" && h.Address == "" {
-			return nil, fmt.Errorf("%s: host %q uses direct transport but has no address", path, h.ID)
+		switch doc.Hosts[i].Transport {
+		case "direct", "jump":
+			if h.Address == "" {
+				return nil, fmt.Errorf("%s: host %q uses %s transport but has no address", path, h.ID, h.Transport)
+			}
+		case "ssm":
+		default:
+			return nil, fmt.Errorf("%s: host %q: unknown transport %q", path, h.ID, h.Transport)
 		}
 		if doc.Hosts[i].Name == "" {
 			doc.Hosts[i].Name = h.ID

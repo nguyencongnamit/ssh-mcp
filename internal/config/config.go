@@ -14,6 +14,7 @@ import (
 	"github.com/nguyencongnamit/ssh-mcp/internal/alerts"
 	"github.com/nguyencongnamit/ssh-mcp/internal/authn"
 	"github.com/nguyencongnamit/ssh-mcp/internal/ca"
+	"github.com/nguyencongnamit/ssh-mcp/internal/transport"
 )
 
 // Config is the server configuration file.
@@ -42,8 +43,9 @@ type Config struct {
 		} `yaml:"ec2"`
 	} `yaml:"inventory"`
 	Transport struct {
-		SSM    bool `yaml:"ssm"`
-		Direct bool `yaml:"direct"`
+		SSM    bool                  `yaml:"ssm"`
+		Direct bool                  `yaml:"direct"`
+		Jump   *transport.JumpConfig `yaml:"jump"`
 	} `yaml:"transport"`
 	Console struct {
 		// Listen enables the admin web console, e.g. 127.0.0.1:8444. Keep it
@@ -101,7 +103,14 @@ func Load(path string) (*Config, error) {
 	if c.Inventory.Static == "" && len(c.Inventory.EC2) == 0 {
 		return nil, errors.New("inventory needs static and/or ec2")
 	}
-	if !c.Transport.SSM && !c.Transport.Direct {
+	if c.Transport.Jump != nil {
+		abs(&c.Transport.Jump.KeyFile)
+		abs(&c.Transport.Jump.KnownHosts)
+		if err := c.Transport.Jump.Validate(); err != nil {
+			return nil, err
+		}
+	}
+	if !c.Transport.SSM && !c.Transport.Direct && c.Transport.Jump == nil {
 		c.Transport.SSM = true
 	}
 	if (c.TLS.CertFile == "") != (c.TLS.KeyFile == "") {

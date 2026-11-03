@@ -9,9 +9,13 @@ services:
     networks: [bed]
     # Exposed on localhost only so the e2e suite can attack sshd directly.
     ports: ["127.0.0.1:18472:22"]
+  bastion:
+    build: ./bastion
+    # Static address: certificates for jump hosts are pinned to it.
+    networks: { bed: { ipv4_address: 10.247.71.10 } }
   server:
     build: ./server
-    depends_on: [target]
+    depends_on: [target, bastion]
     networks: [bed]
     ports: ["127.0.0.1:18471:8443", "127.0.0.1:18473:8444"]
     volumes: ["data:/var/lib/ssh-mcp/data"]
@@ -26,6 +30,6 @@ networks:
   bed:
     # Explicit subnet: the shared Docker host has exhausted its default pools.
     ipam:
-      config: [{subnet: 10.247.71.0/28}]
+      config: [{subnet: 10.247.71.0/28, ip_range: 10.247.71.0/29}]
 volumes:
   data: {}

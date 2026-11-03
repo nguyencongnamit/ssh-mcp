@@ -48,10 +48,12 @@ type Mirrors struct {
 	KnownHosts   string   // known_hosts file keyed by host ID
 	CA           *ca.CA
 	DirectSource string // certificate source-address for direct hosts
-	IdleTimeout  time.Duration
-	SSHFSBin     string // default "sshfs"
-	AWSBin       string // default "aws"
-	Log          *slog.Logger
+	// Jump, when set, reaches jump-transport hosts through the bastion.
+	Jump        *transport.JumpConfig
+	IdleTimeout time.Duration
+	SSHFSBin    string // default "sshfs"
+	AWSBin      string // default "aws"
+	Log         *slog.Logger
 	// Allowed returns false when the global kill switch is set.
 	Allowed func(context.Context) bool
 	// OnIssue records each mirror certificate (host ID, cert serial).
@@ -164,7 +166,7 @@ func (m *Mirrors) writeCert(ctx context.Context, h inventory.Host) error {
 	if err := os.MkdirAll(m.StateDir, 0o700); err != nil {
 		return err
 	}
-	eph, err := m.CA.IssueSFTP("ssh-mcp mirror "+h.ID, transport.SourceAddress(h, m.DirectSource))
+	eph, err := m.CA.IssueSFTP("ssh-mcp mirror "+h.ID, transport.SourceAddress(h, transport.Sources{Direct: m.DirectSource, Jump: m.jumpSource()}))
 	if err != nil {
 		return err
 	}
@@ -291,12 +293,18 @@ func (m *Mirrors) sshfsArgs(h inventory.Host, remote, mnt string) ([]string, err
 		"ControlMaster=no",
 	}
 	switch h.Transport {
-	case "direct":
+	case "direct", "jump":
 		host, port, err := net.SplitHostPort(h.Address)
 		if err != nil {
 			return nil, err
 		}
 		opts = append(opts, "Hostname="+host, "Port="+port)
+		if h.Transport == "jump" {
+			if m.Jump == nil {
+				return nil, errors.New("jump transport not configured")
+			}
+			opts = append(opts, "ProxyCommand="+m.Jump.ProxyCommand())
+		}
 	case "ssm", "":
 		if err := validateAWS(h); err != nil {
 			return nil, err
@@ -343,6 +351,13 @@ func (m *Mirrors) Reset() {
 		st.mounted = false
 		st.mu.Unlock()
 	}
+}
+
+func (m *Mirrors) jumpSource() string {
+	if m.Jump == nil {
+		return ""
+	}
+	return m.Jump.SourceAddress
 }
 
 // Close unmounts everything.

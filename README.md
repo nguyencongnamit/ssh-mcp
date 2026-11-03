@@ -59,7 +59,7 @@ everything above them fails.
 | 2 | Per-call SSH certificate + `Match User` | sshd | forced helper, no pty, no forwarding, 5-minute TTL, pinned source |
 | 3 | `ssh-mcp-helper` | fixed `execve`, no shell | typed tools only; symlink-safe reads; path policy = host floor ∩ policy **signed into the certificate** |
 | 4 | bubblewrap sandbox | namespaces + cgroup v2 | free-form search with no network, no capabilities, capped pids and memory |
-| 5 | Transport | AWS IAM + SSM | `AWS-StartSSHSession` only, tagged hosts only, port 22 closed (direct SSH also supported) |
+| 5 | Transport | AWS IAM + SSM | `AWS-StartSSHSession` only, tagged hosts only, port 22 closed (direct SSH and SSH jump hosts also supported) |
 | 6 | Policy | ssh-mcp server | who × host tags × tool, rate limits, deny by default, kill switch |
 | 7 | Output | ssh-mcp server | size cap, secret redaction, untrusted-data fence, hash-chained audit |
 

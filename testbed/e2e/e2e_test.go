@@ -512,3 +512,36 @@ func TestPolicyReload(t *testing.T) {
 	out, isErr = call(t, cs, "ps", ps)
 	expect(t, "ps after a refused reload", out, false, isErr, []string{"PID"}, nil)
 }
+
+// TestJumpTransport reaches web-2 only through the bastion container: live
+// tools and the sandbox mirror both go server -> bastion -> target, and the
+// target's sshd sees the bastion's address, which the certificate pins.
+func TestJumpTransport(t *testing.T) {
+	cs := session(t, "ops-bot")
+	out, isErr := call(t, cs, "host_overview", map[string]any{"host": "web-2"})
+	expect(t, "host_overview via bastion", out, false, isErr, []string{"Linux", "== disk =="}, nil)
+
+	out, isErr = call(t, cs, "read_file", map[string]any{"host": "web-2", "path": "/var/log/app/app.log"})
+	expect(t, "read_file via bastion", out, false, isErr, []string{"ERROR upstream timeout", "token=[REDACTED]"}, nil)
+
+	out, isErr = call(t, cs, "sandbox_exec", map[string]any{"host": "web-2", "command": "grep -c ERROR /targets/web-2/var/log/app/app.log"})
+	expect(t, "sandbox via bastion", out, false, isErr, []string{"1"}, nil)
+
+	cmd := exec.Command("docker", "compose", "logs", "--no-color", "target")
+	cmd.Dir = bedDir(t)
+	logs, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(logs), "from 10.247.71.10 port") {
+		t.Fatalf("target never saw a connection from the bastion address:\n%s", tail(string(logs), 30))
+	}
+}
+
+func tail(s string, n int) string {
+	lines := strings.Split(s, "\n")
+	if len(lines) > n {
+		lines = lines[len(lines)-n:]
+	}
+	return strings.Join(lines, "\n")
+}
