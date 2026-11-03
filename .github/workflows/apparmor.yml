@@ -1,9 +1,10 @@
 name: AppArmor
 
-# Proves the profiles in deploy/apparmor/ on a real Ubuntu 24.04 host with
-# AppArmor enforcing and the user-namespace restriction left ON. Each check
-# runs once before the profile is loaded (must fail) and once after (must
-# succeed), so the job fails if the profile does nothing or is not needed.
+# Proves the profiles in deploy/apparmor/ on real Ubuntu hosts with AppArmor
+# enforcing and the user-namespace restriction left ON. Each check runs once
+# before the profile is loaded (must fail) and once after (must succeed), so
+# the job fails if a profile does nothing or is not needed. Ubuntu 24.04 has
+# the user-namespace restriction; 26.04 also confines fusermount3.
 on:
   push:
     branches: [main]
@@ -18,8 +19,12 @@ permissions:
 
 jobs:
   profiles:
-    name: Profiles on Ubuntu 24.04
-    runs-on: ubuntu-24.04
+    name: Profiles on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-26.04]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -60,19 +65,26 @@ jobs:
           SH
       - name: Show the stock fusermount3 profile
         run: |
-          sudo aa-status | grep -iE 'fuse|userns' || true
-          sudo cat /etc/apparmor.d/fusermount3 || true
+          grep PRETTY_NAME /etc/os-release
+          if [ -e /etc/apparmor.d/fusermount3 ]; then sudo cat /etc/apparmor.d/fusermount3; echo "FUSE_CONFINED=1" >> "$GITHUB_ENV"
+          else echo "no fusermount3 profile on this release"; echo "FUSE_CONFINED=0" >> "$GITHUB_ENV"; fi
       - name: Without the profiles, both are refused
         run: |
           . /tmp/checks.sh
           if bwrap_check; then echo "::error::bwrap worked without the profile; the check proves nothing"; exit 1; fi
-          if mount_check; then echo "::error::sshfs mounted without the override; the check proves nothing"; exit 1; fi
+          if [ "$FUSE_CONFINED" = 1 ]; then
+            if mount_check; then echo "::error::sshfs mounted without the override; the check proves nothing"; exit 1; fi
+          else
+            mount_check   # unconfined release: works without any profile
+          fi
       - name: Load the profiles
         run: |
           sudo install -m 0644 deploy/apparmor/ssh-mcp /etc/apparmor.d/ssh-mcp
           sudo apparmor_parser -r /etc/apparmor.d/ssh-mcp
-          sudo install -m 0644 deploy/apparmor/fusermount3.local /etc/apparmor.d/local/fusermount3
-          sudo apparmor_parser -r /etc/apparmor.d/fusermount3
+          if [ "$FUSE_CONFINED" = 1 ]; then
+            sudo install -m 0644 deploy/apparmor/fusermount3.local /etc/apparmor.d/local/fusermount3
+            sudo apparmor_parser -r /etc/apparmor.d/fusermount3
+          fi
           sudo aa-status | grep -E 'ssh-mcp|fusermount3'
       - name: With the profiles, both work and the restriction still holds elsewhere
         run: |
@@ -83,7 +95,8 @@ jobs:
           if sudo -u ssh-mcp bwrap --unshare-all --ro-bind / / true; then
             echo "::error::bwrap works outside the ssh-mcp profile; the restriction is not holding"; exit 1
           fi
-          # A mount point outside data_dir is still refused.
+          # A mount point outside data_dir is still refused where confined.
+          [ "$FUSE_CONFINED" = 1 ] || exit 0
           sudo install -d -o ssh-mcp /srv/elsewhere
           if sudo -u ssh-mcp sshfs -o ro,IdentityFile=/var/lib/ssh-mcp/id,UserKnownHostsFile=/var/lib/ssh-mcp/known_hosts,BatchMode=yes \
                ssh-mcp@127.0.0.1:/etc /srv/elsewhere; then

@@ -1,6 +1,6 @@
-# AppArmor profile for the ssh-mcp server on Ubuntu 24.04+.
+# AppArmor profile for the ssh-mcp server on Ubuntu 24.04 and later.
 #
-# Ubuntu 24.04 denies unprivileged user namespaces unless the calling program
+# Ubuntu 24.04+ denies unprivileged user namespaces unless the calling program
 # has a profile that grants "userns". This profile grants it to the ssh-mcp
 # binary only, so its bubblewrap sandboxes work while the system-wide
 # restriction (kernel.apparmor_restrict_unprivileged_userns=1) stays on for
