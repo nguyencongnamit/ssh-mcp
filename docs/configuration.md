@@ -14,7 +14,10 @@
 | `helper_path` | helper location on targets (default `/usr/local/libexec/ssh-mcp-helper`) |
 | `known_hosts` | host keys; `<instance-id> ssh-ed25519 …` for SSM hosts |
 | `policy` | path to `policy.yaml` |
-| `oidc.issuer`, `oidc.audience`, `oidc.required_scope`, `oidc.tenant_id` | OIDC for people (Microsoft Entra ID today) |
+| `oidc.provider` | `entra` (default when `tenant_id` is set) or `generic` (Okta, Keycloak, Google, Auth0, ...). See [People sign-in](#people-sign-in-oidc) |
+| `oidc.issuer`, `oidc.audience`, `oidc.required_scope` | issuer URL (discovery), required `aud` value, and an optional scope that must appear in `scp` or `scope` |
+| `oidc.tenant_id` | Entra only: the token's `tid` must match |
+| `oidc.subject_claim`, `.groups_claim`, `.username_claim` | generic only: claim names, dotted for nested claims (defaults `sub`, `groups`, `preferred_username` then `email`) |
 | `inventory.static` | YAML host list (`id`, `name`, `transport`, `address`, `tags`) |
 | `inventory.ec2[].region`, `.profile` | discover EC2 instances tagged `ssh-mcp=enabled` |
 | `transport.ssm`, `transport.direct` | enable transports |
@@ -30,7 +33,7 @@ Deny by default. A call is allowed when one rule matches caller, host and tool.
 ```yaml
 rules:
   - name: oncall-everything
-    who: { entra_group: <group-object-id> }   # or user: <object-id>, or token: <bot-name>
+    who: { group: <group> }   # or user: <subject>, or token: <bot-name>
     hosts: { tags: { env: [staging, prod] } } # or all: true
     tools: ["*"]
   - name: triage-bot
@@ -43,6 +46,16 @@ paths:
   deny: [/etc/app/private/]   # added to the built-in deny list, never replacing it
 ```
 
+`who` takes exactly one of:
+
+- `group`: a value in the caller's groups (Entra group object ID or app-role
+  name; for generic OIDC, a value of `groups_claim`). `entra_group` is an
+  accepted alias.
+- `user`: the caller's immutable subject (Entra object ID, or the generic
+  provider's subject claim; case-sensitive unless it is a GUID). Emails and
+  usernames are rejected because they can change.
+- `token`: a bot token name from `ssh-mcp token create`.
+
 The effective `paths` policy is signed into every certificate and enforced on
 the host, intersected with the host's own `/etc/ssh-mcp/helper-policy.json`
 floor. The server can narrow what a host exposes, never widen it.
@@ -52,3 +65,71 @@ Built-in deny list (always applied) includes `/etc/shadow`, `/etc/gshadow`,
 `/var/log/audit/`, and globs such as `**/.env`, `**/*.pem`, `**/*.key`,
 `**/id_rsa*`, `**/credentials`, `**/*secret*`, `**/*token*`. See
 `internal/pathpolicy`.
+
+## People sign-in (OIDC)
+
+ssh-mcp verifies each bearer JWT's signature against the issuer's published
+keys and checks issuer, audience (`aud` must contain `audience`), expiry and,
+if set, `required_scope`. Authorization keys only on an immutable subject;
+display names and emails go to the audit log as labels and are never used to
+decide access.
+
+**Microsoft Entra ID**
+
+```yaml
+oidc:
+  issuer: https://login.microsoftonline.com/<tenant-id>/v2.0
+  audience: api://<ssh-mcp-app-id>
+  required_scope: ssh-mcp.read
+  tenant_id: <tenant-id>      # selects provider entra; users keyed by oid
+```
+
+Groups are the `groups` claim (object IDs) plus `roles` (app roles). With more
+than 200 groups Entra omits the claim; such users match no group rules (fails
+closed), so prefer app roles.
+
+**Okta** (custom authorization server)
+
+```yaml
+oidc:
+  provider: generic
+  issuer: https://<org>.okta.com/oauth2/<auth-server-id>
+  audience: api://ssh-mcp
+  required_scope: ssh-mcp.read
+  # Add a "groups" claim to access tokens in the authorization server.
+```
+
+**Keycloak**
+
+```yaml
+oidc:
+  provider: generic
+  issuer: https://<host>/realms/<realm>
+  audience: ssh-mcp            # add an audience mapper to the client
+  groups_claim: realm_access.roles
+```
+
+**Google** (ID tokens; Google access tokens are opaque and cannot be verified
+locally)
+
+```yaml
+oidc:
+  provider: generic
+  issuer: https://accounts.google.com
+  audience: <oauth-client-id>.apps.googleusercontent.com
+  # Google tokens carry no groups; write rules with user: <numeric sub>.
+```
+
+**Auth0**
+
+```yaml
+oidc:
+  provider: generic
+  issuer: https://<tenant>.auth0.com/
+  audience: https://ssh-mcp.example
+  groups_claim: https://ssh-mcp.example/groups   # set by an Auth0 Action
+```
+
+None of these providers, Entra included, has yet been tested with live
+sign-ins. Each claim shape above is covered by unit tests that run a local
+issuer and sign real JWTs.
