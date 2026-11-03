@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -36,8 +37,10 @@ type CA struct {
 	HelperPath string
 	// Paths is the server's effective path policy as JSON. It is embedded
 	// in every certificate (extension PathsExtension) and enforced by the
-	// helper on the target, in both live and SFTP mode.
+	// helper on the target, in both live and SFTP mode. Set it before the
+	// CA is shared; afterwards use SetPaths.
 	Paths   string
+	pathsMu sync.RWMutex
 	LiveTTL time.Duration
 	SFTPTTL time.Duration
 	now     func() time.Time
@@ -150,8 +153,23 @@ func (c *CA) IssueSFTP(keyID, sourceAddr string) (*Ephemeral, error) {
 	return c.issue(keyID, PrincipalSFTP, c.SFTPTTL, opts)
 }
 
+// SetPaths replaces the embedded path policy for certificates issued from
+// now on. Safe to call while certificates are being issued.
+func (c *CA) SetPaths(js string) {
+	c.pathsMu.Lock()
+	c.Paths = js
+	c.pathsMu.Unlock()
+}
+
+func (c *CA) paths() string {
+	c.pathsMu.RLock()
+	defer c.pathsMu.RUnlock()
+	return c.Paths
+}
+
 func (c *CA) issue(keyID, principal string, ttl time.Duration, opts map[string]string) (*Ephemeral, error) {
-	if c.Paths == "" {
+	paths := c.paths()
+	if paths == "" {
 		return nil, errors.New("CA has no path policy to embed")
 	}
 	pub, priv, err := ed25519.GenerateKey(rand.Reader)
@@ -178,7 +196,7 @@ func (c *CA) issue(keyID, principal string, ttl time.Duration, opts map[string]s
 		Permissions: ssh.Permissions{
 			CriticalOptions: opts,
 			// No permit-* extensions: no pty, forwarding, agent, X11 or rc.
-			Extensions: map[string]string{PathsExtension: c.Paths},
+			Extensions: map[string]string{PathsExtension: paths},
 		},
 	}
 	if err := cert.SignCert(rand.Reader, c.signer); err != nil {

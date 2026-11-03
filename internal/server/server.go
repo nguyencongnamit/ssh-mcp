@@ -64,8 +64,11 @@ type MirrorEnsurer interface {
 
 // Server holds the dependencies.
 type Server struct {
-	Store     *store.Store
-	Policy    *policy.Policy
+	Store  *store.Store
+	Policy *policy.Policy
+	// PolicyRef, when set, takes precedence over Policy and allows the
+	// policy to be reloaded at run time.
+	PolicyRef *policy.Holder
 	Inventory inventory.Source
 	Live      LiveExecer
 	Sandbox   SandboxRunner // nil disables sandbox_exec
@@ -245,16 +248,16 @@ func (s *Server) begin(ctx context.Context, req *mcp.CallToolRequest, tool, host
 			return nil, s.fail(ctx, cc, fmt.Errorf("inventory: %w", err))
 		}
 		h, found := inventory.Find(hosts, hostKey)
-		if !found || !s.Policy.CanSeeHost(cc.id, h) {
+		if !found || !s.policy().CanSeeHost(cc.id, h) {
 			return nil, s.refuse(ctx, cc, errUnknownHost.Error())
 		}
 		cc.host = h
 	}
 	var d policy.Decision
 	if tool == ToolListHosts {
-		d = policy.Decision{Allow: s.Policy.HasAnyRule(cc.id), Rule: "list", Reason: "no rules grant you any access"}
+		d = policy.Decision{Allow: s.policy().HasAnyRule(cc.id), Rule: "list", Reason: "no rules grant you any access"}
 	} else {
-		d = s.Policy.Check(cc.id, cc.host, tool)
+		d = s.policy().Check(cc.id, cc.host, tool)
 	}
 	cc.rule = d.Rule
 	if !d.Allow {
@@ -378,7 +381,7 @@ func liveTool[A hostOf](s *Server, tool string) mcp.ToolHandlerFor[A, any] {
 		if verr != nil {
 			return s.refuse(ctx, cc, verr.Error()), nil, nil
 		}
-		if p, isDir, ok := pathOf(norm); ok && !s.Policy.CheckPath(p, isDir) {
+		if p, isDir, ok := pathOf(norm); ok && !s.policy().CheckPath(p, isDir) {
 			return s.refuse(ctx, cc, "path denied by policy: "+p), nil, nil
 		}
 		res, err := s.Live.Exec(ctx, cc.host, keyID(cc), protocol.Request{Tool: tool, Args: raw})
@@ -413,7 +416,7 @@ func (s *Server) listHosts(ctx context.Context, req *mcp.CallToolRequest, _ stru
 	}
 	var b strings.Builder
 	for _, h := range hosts {
-		if !s.Policy.CanSeeHost(cc.id, h) {
+		if !s.policy().CanSeeHost(cc.id, h) {
 			continue
 		}
 		keys := make([]string, 0, len(h.Tags))
@@ -472,4 +475,12 @@ func (s *Server) Handler(verify auth.TokenVerifier, opts *auth.RequireBearerToke
 		r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 		authed.ServeHTTP(w, r)
 	})
+}
+
+// policy returns the active policy.
+func (s *Server) policy() *policy.Policy {
+	if s.PolicyRef != nil {
+		return s.PolicyRef.Load()
+	}
+	return s.Policy
 }

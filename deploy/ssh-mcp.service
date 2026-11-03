@@ -7,6 +7,8 @@ Wants=network-online.target
 User=ssh-mcp
 Group=ssh-mcp
 ExecStart=/usr/local/bin/ssh-mcp serve -config /etc/ssh-mcp/ssh-mcp.yaml
+# Re-reads policy.yaml only; other settings need a restart.
+ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 # fusermount3 is setuid-root; NoNewPrivileges=yes would stop sshfs mounting.
 NoNewPrivileges=no

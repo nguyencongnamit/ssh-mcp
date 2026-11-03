@@ -55,6 +55,17 @@ paths:
   provider's subject claim; case-sensitive unless it is a GUID). Emails and
   usernames are rejected because they can change.
 - `token`: a bot token name from `ssh-mcp token create`.
+### Reloading the policy
+
+`systemctl reload ssh-mcp` (SIGHUP) re-reads `policy.yaml` without dropping
+connections. Run `ssh-mcp policy check` first. A file that does not parse, or
+whose `paths.allow` no longer contains the sandbox prefixes, is refused and
+the running policy stays in force. Every attempt, applied or refused, is an
+audit record (`tool = policy_reload`, with the file's SHA-256). Rate-limit
+budgets carry over. When `paths` changes, new certificates carry the new
+paths at once and sandbox mirrors are remounted. Certificates already issued
+keep the old paths until they expire (5 minutes for live calls). Other
+settings in `ssh-mcp.yaml` need a restart.
 
 The effective `paths` policy is signed into every certificate and enforced on
 the host, intersected with the host's own `/etc/ssh-mcp/helper-policy.json`

@@ -18,6 +18,9 @@ All notable changes are documented here. The format follows
 - Provider-neutral `who: { group: ... }` in policy; `entra_group` remains an
   alias. User subjects other than Entra object IDs are accepted (case-sensitive).
 
+- Policy hot reload: `systemctl reload ssh-mcp` (SIGHUP) re-reads
+  `policy.yaml`; invalid files are refused and every attempt is audited.
+
 ### Changed
 - Architecture diagram is now a drawn SVG (light and dark) instead of Mermaid source.
 

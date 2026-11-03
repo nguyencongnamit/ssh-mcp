@@ -476,3 +476,39 @@ func TestSFTPIsReadOnly(t *testing.T) {
 		t.Fatalf("denied .env fetched over sftp:\n%s", out)
 	}
 }
+
+// TestPolicyReload edits policy.yaml inside the running server and sends
+// SIGHUP, as `systemctl reload` does. A valid change applies without a
+// restart; an invalid file is refused and the running policy stays.
+func TestPolicyReload(t *testing.T) {
+	compose := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("docker", append([]string{"compose"}, args...)...)
+		cmd.Dir = bedDir(t)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("docker compose %v: %v\n%s", args, err, out)
+		}
+	}
+	const file = "/etc/ssh-mcp/policy.yaml"
+	edit := func(script string) {
+		t.Helper()
+		compose("exec", "-T", "-u", "root", "server", "sh", "-c", script)
+		compose("kill", "-s", "HUP", "server")
+		time.Sleep(time.Second)
+	}
+	compose("exec", "-T", "-u", "root", "server", "cp", "-p", file, file+".orig")
+	t.Cleanup(func() { edit("cp -p " + file + ".orig " + file) })
+
+	cs := session(t, "log-bot")
+	ps := map[string]any{"host": "web-1", "limit": 3}
+	out, isErr := call(t, cs, "ps", ps)
+	expect(t, "ps before reload", out, true, isErr, []string{"refused"}, nil)
+
+	edit(`sed -i 's/tools: \[journal, tail_file\]/tools: [journal, tail_file, ps]/' ` + file)
+	out, isErr = call(t, cs, "ps", ps)
+	expect(t, "ps after reload", out, false, isErr, []string{"PID"}, nil)
+
+	edit(`printf 'rules: [ {who: {}} ]\n' > ` + file)
+	out, isErr = call(t, cs, "ps", ps)
+	expect(t, "ps after a refused reload", out, false, isErr, []string{"PID"}, nil)
+}
